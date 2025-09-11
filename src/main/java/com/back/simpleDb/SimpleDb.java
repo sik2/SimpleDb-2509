@@ -83,7 +83,7 @@ public class SimpleDb {
         }
     }
 
-    public List<Map<String, Object>> select(String sql, Object... args) {
+    public List<Map<String, Object>> selectRows(String sql, Object... args) {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
 
             for(int i=0; i<args.length; i++) {
@@ -110,6 +110,40 @@ public class SimpleDb {
             }
 
             return rows;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Map<String, Object> selectRow(String sql, Object... args) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql + " limit 1")){
+
+            for(int i=0; i<args.length; i++) {
+                pstmt.setObject(i+1, args[i]);
+            }
+
+            ResultSet rs = pstmt.executeQuery();
+
+            System.out.println("[sql] " + sql);
+            System.out.println("[args]" + Arrays.toString(args));
+
+            if(!rs.next()) {
+                return null;
+            }
+
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            Map<String, Object> row = new HashMap<>();
+
+            for(int i=1; i<=columnCount; i++) {
+                String columnName = metaData.getColumnName(i);
+                Object value = rs.getObject(i);
+                row.put(columnName, value);
+            }
+
+            return row;
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

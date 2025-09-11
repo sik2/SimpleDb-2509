@@ -36,14 +36,10 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-        return db.select(querySb.toString(), args.toArray());
+        return db.selectRows(querySb.toString(), args.toArray());
     }
 
     public Map<String, Object> selectRow() {
-        List<Map<String, Object>> rows = this.selectRows();
-        if (rows.isEmpty()) {
-            return null;
-        }
-        return rows.get(0); // 첫 번째 row만 반환
+        return db.selectRow(querySb.toString(), args.toArray());
     }
 }

@@ -141,6 +141,16 @@ public class SimpleDb {
         });
     }
 
+    private Boolean queryBooleanColumn(String sql, Object... args) {
+        return runTemplate(sql, args, statement -> {
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                return rs.getBoolean(1);
+            }
+            return null;
+        });
+    }
+
     public void close() {
 
     }
@@ -220,12 +230,12 @@ public class SimpleDb {
             return SimpleDb.this.queryColumn(builder.toString(), bindingArgs.toArray());
         }
 
-        public Boolean selectBoolean() {
+        public List<Long> selectLongs() {
             return SimpleDb.this.queryColumn(builder.toString(), bindingArgs.toArray());
         }
 
-        public List<Long> selectLongs() {
-            return SimpleDb.this.queryColumn(builder.toString(), bindingArgs.toArray());
+        public Boolean selectBoolean() {
+            return SimpleDb.this.queryBooleanColumn(builder.toString(), bindingArgs.toArray());
         }
     }
 }

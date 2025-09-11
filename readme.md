@@ -133,3 +133,5 @@ public void run(String sql) {
 selectRows를 while(rs.next())로 selectRow를 반복해 rows를 얻고자 하였다.
 
 그러나, 내부적으로 selectRow가 if(rs.next())를 호출하여 커서가 2번씩 이동하는 문제가 발생하였다.
+
+## SetObject()와 getObject()에서 Boolean만이 제대로 변환되지 않는 이유 (t9 ~ t11)

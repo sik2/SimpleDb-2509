@@ -17,6 +17,7 @@ public class SimpleDb {
     }
 
     private void logSql(String sql, Object... args) {
+        if(!devMode) { return; }
         System.out.println("==============================================");
         System.out.println("sql " + sql);
         System.out.println("args " + Arrays.toString(args));

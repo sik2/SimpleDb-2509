@@ -2,7 +2,9 @@ package com.back.domain.article.db;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Sql {
     private final SimpleDb simpleDb;
@@ -101,20 +103,63 @@ public class Sql {
     }
 
     public int delete() {
+        return update();
+    }
+
+    public List<Map<String, Object>> selectRows() {
         logSql();
 
-        // try-with-resources 구문으로 Connection과 PreparedStatement 자원을 자동 해제
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        // Connection, PreparedStatement, ResultSet 모두 try-with-resources로 자원 관리
         try (Connection conn = DriverManager.getConnection(simpleDb.url, simpleDb.user, simpleDb.password);
-             PreparedStatement pstmt = conn.prepareStatement(rawSql.toString().trim())) {
+             PreparedStatement pstmt = conn.prepareStatement(rawSql.toString().trim());
+             ResultSet rs = pstmt.executeQuery()) {
 
             bindParams(pstmt);
 
-            // SQL을 실행하고, 영향받은 row의 개수를 반환
-            return pstmt.executeUpdate();
+            // ResultSet의 메타데이터(컬럼 정보)를 루프 시작 전에 한 번만 가져옴
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            // while 루프를 돌며 각 row를 처리
+            while (rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+
+                // for 루프를 돌며 현재 row의 모든 컬럼을 Map에 담음
+                for (int i = 1; i <= columnCount; i++) {
+                    // 컬럼명을 가져옴 (AS 별칭이 있을 경우를 대비해 getColumnLabel 사용)
+                    String columnName = metaData.getColumnLabel(i);
+                    // 컬럼의 데이터 값을 가져옴
+                    Object value = rs.getObject(i);
+
+                    // t004 테스트 통과를 위한 타입 변환
+                    if (value instanceof Timestamp) {
+                        // DB의 DATETIME/TIMESTAMP 타입을 Java의 LocalDateTime으로 변환
+                        value = ((Timestamp) value).toLocalDateTime();
+                    } else if (value instanceof Long && metaData.getColumnTypeName(i).equals("BIT")) {
+                        // DB의 BIT(1) 타입을 Java의 boolean으로 변환
+                        value = (long) value == 1;
+                    }
+
+                    row.put(columnName, value);
+                }
+                rows.add(row);
+            }
 
         } catch (SQLException e) {
-            // 예외 발생 시 RuntimeException으로 전환하여 처리 중단
             throw new RuntimeException(e);
         }
+
+        return rows;
+    }
+
+    public Map<String, Object> selectRow() {
+        List<Map<String, Object>> rows = selectRows();
+
+        if (rows.isEmpty()) {
+            return null;
+        }
+        return rows.getFirst();
     }
 }

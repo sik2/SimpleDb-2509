@@ -175,4 +175,34 @@ public class Sql {
         //Map에 들어있는 첫 번째 값(Value)을 꺼내서 LocalDateTime으로 형변환 후 반환
         return (LocalDateTime) row.values().iterator().next();
     }
+
+    public Long selectLong() {
+        Map<String, Object> row = selectRow();
+        if (row.isEmpty()) {
+            return null;
+        }
+
+        //Map에 들어있는 첫 번째 값(Value)을 꺼내서 Long으로 형변환 후 반환
+        return (Long) row.values().iterator().next();
+    }
+
+    public String selectString() {
+        Map<String, Object> row = selectRow();
+        if (row.isEmpty()) {
+            return null;
+        }
+
+        //Map에 들어있는 첫 번째 값(Value)을 꺼내서 String으로 형변환 후 반환
+        return row.values().iterator().next().toString();
+    }
+
+    public Boolean selectBoolean() {
+        Map<String, Object> row = selectRow();
+        if (row.isEmpty()) {
+            return null;
+        }
+
+        //Map에 들어있는 첫 번째 값(Value)을 꺼내서 반환
+        return (Boolean) row.values().iterator().next();
+    }
 }

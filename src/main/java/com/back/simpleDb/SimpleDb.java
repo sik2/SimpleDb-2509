@@ -16,14 +16,7 @@ public class SimpleDb {
         connectDb(url);
     }
 
-    private void logSql(String sql, Object... args) {
-        if(!devMode) { return; }
-        System.out.println("==============================================");
-        System.out.println("sql " + sql);
-        System.out.println("args " + Arrays.toString(args));
-    }
-
-    public void connectDb(String url) {
+    private void connectDb(String url) {
         try {
             this.conn = DriverManager.getConnection(url);
             System.out.println("DB 연결 성공");
@@ -32,17 +25,38 @@ public class SimpleDb {
         }
     }
 
+    private void logSql(String sql, Object... args) {
+        if(!devMode) { return; }
+        System.out.println("========== SQL ==========");
+        System.out.println("sql " + sql);
+        System.out.println("args " + Arrays.toString(args));
+    }
+
+    private void logErr(Throwable e, String sql, Object... args) {
+        if(!devMode) { return; }
+        System.err.println("========== ERROR ==========");
+        System.err.println("sql " + sql);
+        System.err.println("args " + Arrays.toString(args));
+        e.printStackTrace(System.err);
+    }
+
+
+    private void setArgs(PreparedStatement pstmt, Object... args) throws SQLException {
+        for(int i=0; i<args.length; i++) {
+            pstmt.setObject(i+1, args[i]);
+        }
+    }
+
     public void run(String sql, Object... args) {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
 
-            for(int i=0; i<args.length; i++) {
-                pstmt.setObject(i+1, args[i]);
-            }
+            setArgs(pstmt, args);
 
-            int rs = pstmt.executeUpdate();
+            pstmt.executeUpdate();
 
             logSql(sql, args);
         } catch (SQLException e) {
+            logErr(e, sql, args);
             throw new RuntimeException(e);
         }
     }
@@ -54,9 +68,7 @@ public class SimpleDb {
     public long insert(String sql, Object... args) {
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            for(int i=0; i<args.length; i++) {
-                pstmt.setObject(i+1, args[i]);
-            }
+            setArgs(pstmt, args);
 
             pstmt.executeUpdate();
             ResultSet rs = pstmt.getGeneratedKeys();
@@ -70,6 +82,7 @@ public class SimpleDb {
 
             return newId;
         } catch (SQLException e) {
+            logErr(e, sql, args);
             throw new RuntimeException(e);
         }
     }
@@ -77,9 +90,7 @@ public class SimpleDb {
     public int updateOrDelete(String sql, Object... args) {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
 
-            for(int i=0; i<args.length; i++) {
-                pstmt.setObject(i+1, args[i]);
-            }
+            setArgs(pstmt, args);
 
             int affectedRows = pstmt.executeUpdate(); //영향 받은 행의 수
 
@@ -87,6 +98,7 @@ public class SimpleDb {
 
             return affectedRows;
         } catch (SQLException e) {
+            logErr(e, sql, args);
             throw new RuntimeException(e);
         }
     }
@@ -94,9 +106,7 @@ public class SimpleDb {
     public List<Map<String, Object>> selectRows(String sql, Object... args) {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
 
-            for(int i=0; i<args.length; i++) {
-                pstmt.setObject(i+1, args[i]);
-            }
+            setArgs(pstmt, args);
 
             ResultSet rs = pstmt.executeQuery();
 
@@ -118,6 +128,7 @@ public class SimpleDb {
 
             return rows;
         } catch (SQLException e) {
+            logErr(e, sql, args);
             throw new RuntimeException(e);
         }
     }
@@ -151,6 +162,7 @@ public class SimpleDb {
             return row;
 
         } catch (SQLException e) {
+            logErr(e, sql, args);
             throw new RuntimeException(e);
         }
     }

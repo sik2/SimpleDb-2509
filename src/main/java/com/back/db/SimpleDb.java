@@ -4,16 +4,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import lombok.Setter;
-import org.springframework.stereotype.Component;
 
 public class SimpleDb {
 
@@ -96,8 +96,23 @@ public class SimpleDb {
         return runTemplate(sql, args, statement -> statement.executeUpdate());
     }
 
-    public Sql genSql() {
-        return new Sql();
+    private int runDelete(String sql, Object... args) {
+        return runTemplate(sql, args, statement -> statement.executeUpdate());
+    }
+
+    private Map<String, Object> getQueryResultToMap(String sql, Object... args) {
+        return runTemplate(sql,args, statement -> {
+            ResultSet rs = statement.executeQuery();
+            Map<String, Object> row = new HashMap<>();
+            if (rs.next()) {
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                for (int i = 1; i <= columnCount; i++) {
+                    row.put(metaData.getColumnName(i), rs.getObject(i));
+                }
+            }
+            return row;
+        });
     }
 
     public void close() {
@@ -113,6 +128,10 @@ public class SimpleDb {
 
     public void commit() {
 
+    }
+
+    public Sql genSql() {
+        return new Sql();
     }
 
     public class Sql {
@@ -144,7 +163,7 @@ public class SimpleDb {
         }
 
         public int delete() {
-            return 0;
+            return SimpleDb.this.runDelete(builder.toString(), bindingArgs.toArray());
         }
 
         public List<Map<String, Object>> selectRows() {
@@ -160,7 +179,7 @@ public class SimpleDb {
         }
 
         public Map<String, Object> selectRow() {
-            return null;
+            return SimpleDb.this.getQueryResultToMap(builder.toString(), bindingArgs.toArray());
         }
 
         public LocalDateTime selectDatetime() {
@@ -183,5 +202,4 @@ public class SimpleDb {
             return null;
         }
     }
-
 }

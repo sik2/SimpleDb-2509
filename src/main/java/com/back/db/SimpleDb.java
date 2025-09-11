@@ -41,7 +41,7 @@ public class SimpleDb {
 
     // throws SQLException을 명시하기 위한 Function<PreparedStatement, T> 함수형 인터페이스
     @FunctionalInterface
-    interface StatementCallback<T>  {
+    interface StatementCallback<T> {
         T apply(PreparedStatement statement) throws SQLException;
     }
 
@@ -101,17 +101,33 @@ public class SimpleDb {
     }
 
     private Map<String, Object> getQueryResultToMap(String sql, Object... args) {
-        return runTemplate(sql,args, statement -> {
+        return runTemplate(sql, args, statement -> {
             ResultSet rs = statement.executeQuery();
-            Map<String, Object> row = new HashMap<>();
             if (rs.next()) {
-                ResultSetMetaData metaData = rs.getMetaData();
-                int columnCount = metaData.getColumnCount();
-                for (int i = 1; i <= columnCount; i++) {
-                    row.put(metaData.getColumnName(i), rs.getObject(i));
-                }
+                return getRowToMap(rs);
             }
-            return row;
+            return new HashMap<>();
+        });
+    }
+
+    private Map<String, Object> getRowToMap(ResultSet rs) throws SQLException {
+        Map<String, Object> row = new HashMap<>();
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columnCount = metaData.getColumnCount();
+        for (int i = 1; i <= columnCount; i++) {
+            row.put(metaData.getColumnName(i), rs.getObject(i));
+        }
+        return row;
+    }
+
+    private List<Map<String, Object>> getQueryResultToMaps(String sql, Object... args) {
+        return runTemplate(sql, args, statement -> {
+            ResultSet rs = statement.executeQuery();
+            List<Map<String, Object>> rows = new ArrayList<>();
+            while (rs.next()) {
+                rows.add(getRowToMap(rs));
+            }
+            return rows;
         });
     }
 
@@ -166,8 +182,12 @@ public class SimpleDb {
             return SimpleDb.this.runDelete(builder.toString(), bindingArgs.toArray());
         }
 
+        public Map<String, Object> selectRow() {
+            return SimpleDb.this.getQueryResultToMap(builder.toString(), bindingArgs.toArray());
+        }
+
         public List<Map<String, Object>> selectRows() {
-            return null;
+            return SimpleDb.this.getQueryResultToMaps(builder.toString(), bindingArgs.toArray());
         }
 
         public <T> List<T> selectRows(Class<T> clazz) {
@@ -176,10 +196,6 @@ public class SimpleDb {
 
         public <T> T selectRow(Class<T> clazz) {
             return null;
-        }
-
-        public Map<String, Object> selectRow() {
-            return SimpleDb.this.getQueryResultToMap(builder.toString(), bindingArgs.toArray());
         }
 
         public LocalDateTime selectDatetime() {

@@ -1,5 +1,6 @@
 package com.back.simpleDb;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,5 +42,61 @@ public class Sql {
 
     public Map<String, Object> selectRow() {
         return db.selectRow(querySb.toString(), args.toArray());
+    }
+
+    public LocalDateTime selectDatetime() {
+        Map<String, Object> row = db.selectRow(querySb.toString(), args.toArray());
+        if(row == null) {
+            return null;
+        }
+        for(Object value : row.values()) {
+            System.out.println(value.getClass().getName());
+            if(value instanceof LocalDateTime) {
+                return (LocalDateTime) value;
+            }
+        }
+        return null;
+    }
+
+    public Long selectLong() {
+        Map<String, Object> row = db.selectRow(querySb.toString(), args.toArray());
+        if(row == null) {
+            return null;
+        }
+        for(Object value : row.values()) {
+            System.out.println(value.getClass().getName());
+            if(value instanceof Long) {
+                return (Long) value;
+            }
+        }
+        return null;
+    }
+
+    public String selectString() {
+        Map<String, Object> row = db.selectRow(querySb.toString(), args.toArray());
+        if(row == null) {
+            return null;
+        }
+        for(Object value : row.values()) {
+            System.out.println(value.getClass().getName());
+            if(value instanceof String) {
+                return (String) value;
+            }
+        }
+        return null;
+    }
+
+    public Boolean selectBoolean() {
+        Map<String, Object> row = db.selectRow(querySb.toString(), args.toArray());
+        if(row == null) {
+            return null;
+        }
+        for(Object value : row.values()) {
+            System.out.println(value.getClass().getName());
+            if(value instanceof Boolean) {
+                return (Boolean) value;
+            }
+        }
+        return null;
     }
 }

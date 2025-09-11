@@ -32,7 +32,7 @@ public class SimpleDb {
         System.out.println("args " + Arrays.toString(args));
     }
 
-    private void logErr(Throwable e, String sql, Object... args) {
+    private void logErr(SQLException e, String sql, Object... args) {
         if(!devMode) { return; }
         System.err.println("========== ERROR ==========");
         System.err.println("sql " + sql);
@@ -108,25 +108,26 @@ public class SimpleDb {
 
             setArgs(pstmt, args);
 
-            ResultSet rs = pstmt.executeQuery();
+            try(ResultSet rs = pstmt.executeQuery()) {
+                logSql(sql, args);
 
-            logSql(sql, args);
+                List<Map<String, Object>> rows = new ArrayList<>();
 
-            List<Map<String, Object>> rows = new ArrayList<>();
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
 
-            while (rs.next()) {
-                Map<String, Object> row = new HashMap<>();
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = metaData.getColumnName(i);
-                    Object value = rs.getObject(i);
-                    row.put(columnName, value);
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        Object value = rs.getObject(i);
+                        row.put(columnName, value);
+                    }
+                    rows.add(row);
                 }
-                rows.add(row);
-            }
 
-            return rows;
+                return rows;
+            }
         } catch (SQLException e) {
             logErr(e, sql, args);
             throw new RuntimeException(e);
@@ -134,36 +135,10 @@ public class SimpleDb {
     }
 
     public Map<String, Object> selectRow(String sql, Object... args) {
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-
-            for(int i=0; i<args.length; i++) {
-                pstmt.setObject(i+1, args[i]);
-            }
-
-            ResultSet rs = pstmt.executeQuery();
-
-            logSql(sql, args);
-
-            if(!rs.next()) {
-                return null;
-            }
-
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-
-            Map<String, Object> row = new HashMap<>();
-
-            for(int i=1; i<=columnCount; i++) {
-                String columnName = metaData.getColumnName(i);
-                Object value = rs.getObject(i);
-                row.put(columnName, value);
-            }
-
-            return row;
-
-        } catch (SQLException e) {
-            logErr(e, sql, args);
-            throw new RuntimeException(e);
+        List<Map<String,Object>> rows = selectRows(sql, args);
+        if (rows == null || rows.isEmpty()) {
+            return null;
         }
+        return rows.getFirst();
     }
 }

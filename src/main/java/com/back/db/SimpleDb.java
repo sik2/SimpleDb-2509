@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
 
@@ -38,13 +39,35 @@ public class SimpleDb {
         return DriverManager.getConnection(URL, userName, password);
     }
 
-    public void run(String sql) {
+    private <T> T runTemplate(String sql, Object[] args, Function<Statement, T> callback) {
         try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.executeUpdate();
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            if (args != null) {
+                for (int i = 0; i < args.length; i++) {
+                    statement.setObject(i + 1, args[i]);
+                }
+            }
+
+            return callback.apply(statement); // 콜백 함수 실행
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private <T> T runTemplate(String sql, Function<Statement, T> callback) {
+        return runTemplate(sql, null, callback);
+    }
+
+    public void run(String sql) {
+        runTemplate(sql, statement -> {
+            try {
+                return statement.executeUpdate(sql);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public void run(String sql, Object... args) {
@@ -77,6 +100,19 @@ public class SimpleDb {
             throw new RuntimeException(e);
         }
         return 0;
+    }
+
+    private int runUpdate(String sql, Object... args) {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            for (int i = 0; i < args.length; i++) {
+                statement.setObject(i + 1, args[i]);
+            }
+            // executeUpdate() : 쿼리를 실행하고 영향받은 row 수를 반환
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Sql genSql() {
@@ -119,12 +155,11 @@ public class SimpleDb {
         }
 
         public long insert() {
-            System.out.println("Generated SQL: " + this.builder);
             return SimpleDb.this.runInsert(builder.toString(), bindingArgs.toArray());
         }
 
         public int update() {
-            return 0;
+            return SimpleDb.this.runUpdate(builder.toString(), bindingArgs.toArray());
         }
 
         public int delete() {

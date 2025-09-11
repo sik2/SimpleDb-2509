@@ -99,4 +99,22 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public int delete() {
+        logSql();
+
+        // try-with-resources 구문으로 Connection과 PreparedStatement 자원을 자동 해제
+        try (Connection conn = DriverManager.getConnection(simpleDb.url, simpleDb.user, simpleDb.password);
+             PreparedStatement pstmt = conn.prepareStatement(rawSql.toString().trim())) {
+
+            bindParams(pstmt);
+
+            // SQL을 실행하고, 영향받은 row의 개수를 반환
+            return pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            // 예외 발생 시 RuntimeException으로 전환하여 처리 중단
+            throw new RuntimeException(e);
+        }
+    }
 }

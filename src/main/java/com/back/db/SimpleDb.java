@@ -13,6 +13,7 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +152,18 @@ public class SimpleDb {
         });
     }
 
+    private <T> List<T> queryColumns(String sql, Object... args) {
+        return runTemplate(sql, args, statement -> {
+            try (ResultSet rs = statement.executeQuery()) {
+                List<T> columns = new ArrayList<>();
+                while (rs.next()) {
+                    columns.add((T) rs.getObject(1));
+                }
+                return columns;
+            }
+        });
+    }
+
     private Boolean queryBooleanColumn(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
             try (ResultSet rs = statement.executeQuery()){
@@ -218,11 +231,11 @@ public class SimpleDb {
         }
 
         public Sql appendIn(String sql, Object... args) {
-            StringJoiner joiner = new StringJoiner(", ", "(", ")");
+            StringJoiner joiner = new StringJoiner(", ");
             for (int i = 0; i< args.length; i++) {
                 joiner.add("?");
             }
-            String replace = sql.replace("(?)", joiner.toString());
+            String replace = sql.replace("?", joiner.toString());
             builder.append(replace).append(" ");
 
             bindingArgs.addAll(Arrays.asList(args));
@@ -246,15 +259,15 @@ public class SimpleDb {
             return SimpleDb.this.queryRowToMap(builder.toString(), bindingArgs.toArray());
         }
 
+        public <T> T selectRow(Class<T> clazz) {
+            return null;
+        }
+
         public List<Map<String, Object>> selectRows() {
             return SimpleDb.this.queryRowsToMaps(builder.toString(), bindingArgs.toArray());
         }
 
         public <T> List<T> selectRows(Class<T> clazz) {
-            return null;
-        }
-
-        public <T> T selectRow(Class<T> clazz) {
             return null;
         }
 
@@ -271,7 +284,7 @@ public class SimpleDb {
         }
 
         public List<Long> selectLongs() {
-            return SimpleDb.this.queryColumn(builder.toString(), bindingArgs.toArray());
+            return SimpleDb.this.queryColumns(builder.toString(), bindingArgs.toArray());
         }
 
         public Boolean selectBoolean() {

@@ -3,6 +3,9 @@ package com.back.db;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -13,7 +16,6 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,6 +143,89 @@ public class SimpleDb {
         });
     }
 
+    private <T> T queryRow(String sql, Object[] args, Class<T> clazz) {
+        return runTemplate(sql, args, statement -> {
+            try (ResultSet rs = statement.executeQuery()) {
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                T instance = clazz.getDeclaredConstructor().newInstance();
+                if (rs.next()) {
+                    for (int i = 1; i <= columnCount; i++) {
+                        // TODO : Reflection 데이터 캐싱
+                        bindArguments(clazz, rs, metaData, i, instance);
+                    }
+                }
+                return instance;
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private <T> List<T> queryRows(String sql, Object[] args, Class<T> clazz) {
+        return runTemplate(sql, args, statement -> {
+            List<T> rows = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                while (rs.next()) {
+                    T instance = clazz.getDeclaredConstructor().newInstance();
+                    for (int i = 1; i <= columnCount; i++) {
+                        // TODO : Reflection 데이터 캐싱
+                        bindArguments(clazz, rs, metaData, i, instance);
+                    }
+                    rows.add(instance);
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+            return rows;
+        });
+    }
+
+    private <T> void bindArguments(Class<T> clazz, ResultSet rs, ResultSetMetaData metaData, int i, T instance)
+            throws SQLException, NoSuchFieldException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        String columnName = metaData.getColumnName(i);
+
+        String fieldName = convertCamelCase(columnName);
+        Field field = clazz.getDeclaredField(fieldName);
+
+        String setterName = convertSetterName(fieldName, field.getType());
+        Method setter = clazz.getMethod(setterName, field.getType());
+
+        setter.invoke(instance, rs.getObject(i));
+    }
+
+    private String convertCamelCase(String columnName) {
+        while (columnName.endsWith("_")) {
+            columnName = columnName.substring(0, columnName.length() - 1);
+        }
+        StringBuilder sb = new StringBuilder();
+        boolean capitalizeNext = false;
+        for (char c : columnName.toCharArray()) {
+            if (c == '_') {
+                capitalizeNext = true;
+                continue;
+            }
+            if (capitalizeNext) {
+                sb.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    private String convertSetterName(String columnName, Class<?> fieldType) {
+        if (fieldType.equals(boolean.class) && columnName.startsWith("is")) {
+            return "set" + columnName.substring(2, 3).toUpperCase() + columnName.substring(3);
+        }
+        return "set" + columnName.substring(0, 1).toUpperCase() + columnName.substring(1);
+    }
+
     private <T> T queryColumn(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
             try (ResultSet rs = statement.executeQuery()) {
@@ -166,7 +251,7 @@ public class SimpleDb {
 
     private Boolean queryBooleanColumn(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
-            try (ResultSet rs = statement.executeQuery()){
+            try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
                     return rs.getBoolean(1);
                 }
@@ -232,7 +317,7 @@ public class SimpleDb {
 
         public Sql appendIn(String sql, Object... args) {
             StringJoiner joiner = new StringJoiner(", ");
-            for (int i = 0; i< args.length; i++) {
+            for (int i = 0; i < args.length; i++) {
                 joiner.add("?");
             }
             String replace = sql.replace("?", joiner.toString());
@@ -260,7 +345,7 @@ public class SimpleDb {
         }
 
         public <T> T selectRow(Class<T> clazz) {
-            return null;
+            return queryRow(builder.toString(), bindingArgs.toArray(), clazz);
         }
 
         public List<Map<String, Object>> selectRows() {
@@ -268,7 +353,7 @@ public class SimpleDb {
         }
 
         public <T> List<T> selectRows(Class<T> clazz) {
-            return null;
+            return queryRows(builder.toString(), bindingArgs.toArray(), clazz);
         }
 
         public LocalDateTime selectDatetime() {

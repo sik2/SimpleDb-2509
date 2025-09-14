@@ -219,3 +219,45 @@ MySql에서 반드시 따로 관리해줘야 하는 boolean과 다르게 다른 
 `setObject`/`getObject`를 사용해 유연성을 확보하고, 타입 문제(boolean)가 발생하는 예외적인 경우에만 전용 메서드를 만들어 문제를 해결했습니다. 
 이 방식은 코드의 양을 최소화하면서도 안정성을 확보하는 현명한 접근입니다. 굳이 `setLong`, `setString` 등을 일일이 구현할 필요는 없습니다.
 </details>
+
+---
+
+2주차
+
+## StringBuilder 대신 "+"를 이용해서 문자열을 겹합해도 좋을까?
+
+![img.png](img.png)
+
+기껏 StringBuilder를 이용하여 결합하였더니 IDE가 +를 이용해서 결합하는 것을 추천하였다.
+
+JAVA 9부터는 + 로 String을 결합하면 알아서 컴파일러가 StringBuilder로 최적화해준다고 한다.
+
+단, 지속적으로 초기화가 발생하는 경우는 StringBuilder를 사용하는 것이 좋고, 단순 결합의 경우에는 + 로 충분한 것 같다.
+
+```java
+// 이건 여전히 비효율적
+String result = "";
+for (String s : list) {
+    result += s;  // 매번 새 객체 생성
+}
+
+// 이렇게 해야 함
+StringBuilder sb = new StringBuilder();
+for (String s : list) {
+    sb.append(s);
+}
+```
+
+## lombok의 boolean setter 명명법
+
+boolean isXXX 로 boolean값을 설정하면
+
+getter는 isXXX, setter는 setXXX로 선언한다.
+
+## boolean은 특별 취급이 아님?(미해결)
+
+Article정보를 리플렉션으로 받아 값들을 바인딩 할 떄, boolean필드인 isBlind를 따로 처리하는 코드를 주석처리하고
+
+getObject로 받아와도 전혀 문제가 없었다.
+
+왜 분명 앞의 t10, t11에선 boolean을 따로 취급해줘야 하는데 왜일까?

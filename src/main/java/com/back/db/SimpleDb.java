@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
@@ -129,32 +130,35 @@ public class SimpleDb {
 
     private List<Map<String, Object>> queryRowsToMaps(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
-            ResultSet rs = statement.executeQuery();
-            List<Map<String, Object>> rows = new ArrayList<>();
-            while (rs.next()) {
-                rows.add(convertRowToMap(rs));
+            try (ResultSet rs = statement.executeQuery()) {
+                List<Map<String, Object>> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(convertRowToMap(rs));
+                }
+                return rows;
             }
-            return rows;
         });
     }
 
     private <T> T queryColumn(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
-            ResultSet rs = statement.executeQuery();
-            if (rs.next()) {
-                return (T) rs.getObject(1);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return (T) rs.getObject(1);
+                }
+                return null;
             }
-            return null;
         });
     }
 
     private Boolean queryBooleanColumn(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
-            ResultSet rs = statement.executeQuery();
-            if (rs.next()) {
-                return rs.getBoolean(1);
+            try (ResultSet rs = statement.executeQuery()){
+                if (rs.next()) {
+                    return rs.getBoolean(1);
+                }
+                return null;
             }
-            return null;
         });
     }
 
@@ -214,7 +218,16 @@ public class SimpleDb {
         }
 
         public Sql appendIn(String sql, Object... args) {
-            return null;
+            StringJoiner joiner = new StringJoiner(", ", "(", ")");
+            for (int i = 0; i< args.length; i++) {
+                joiner.add("?");
+            }
+            String replace = sql.replace("(?)", joiner.toString());
+            builder.append(replace).append(" ");
+
+            bindingArgs.addAll(Arrays.asList(args));
+
+            return this;
         }
 
         public long insert() {

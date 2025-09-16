@@ -52,18 +52,6 @@ public class SimpleDb {
         return connection;
     }
 
-    public void close() {
-    }
-
-    public void startTransaction() {
-    }
-
-    public void rollback() {
-    }
-
-    public void commit() {
-    }
-
     // throws SQLException을 명시하기 위한 Function<PreparedStatement, T> 함수형 인터페이스
     // 바인딩 완료된 PreparedStatement 이용해, 쿼리를 실행하고 적절한 결과값을 반환하도록 구현한다
     @FunctionalInterface
@@ -78,21 +66,71 @@ public class SimpleDb {
         log.info("=======================================");
 
         // try - with resources (JAVA 7 이상)
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        Connection connection = null;
+        try {
+            connection = getConnection();
+            try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // 바인딩할 값이 없을 경우 생략
-            if (args != null) {
-                for (int i = 0; i < args.length; i++) {
-                    statement.setObject(i + 1, args[i]);
+                // 바인딩할 값이 없을 경우 생략
+                if (args != null) {
+                    for (int i = 0; i < args.length; i++) {
+                        statement.setObject(i + 1, args[i]);
+                    }
                 }
+
+                return callback.apply(statement);
             }
-
-            return callback.apply(statement);
-
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
+        } finally {
+            try {
+                if (connection != null && connection.getAutoCommit()) {
+                    connection.close();
+                    connectionHolder.remove();
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void startTransaction() {
+        try {
+            getConnection().setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void commit() {
+        try {
+            Connection connection = connectionHolder.get();
+            connection.commit();
+            close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void rollback() {
+        try {
+            Connection connection = connectionHolder.get();
+            connection.rollback();
+            close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void close() {
+        try {
+            Connection connection = connectionHolder.get();
+            connection.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            connectionHolder.remove();
         }
     }
 

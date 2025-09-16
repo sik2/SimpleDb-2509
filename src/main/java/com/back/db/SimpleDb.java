@@ -30,6 +30,7 @@ public class SimpleDb {
     private final String userName;
     private final String password;
     private final String database;
+    private final ThreadLocal<Connection> connectionHolder = new ThreadLocal<>();
 
     private static final int PORT = 3306;
 
@@ -43,7 +44,24 @@ public class SimpleDb {
     // TODO : 커넥션 풀을 구현하여 thread-safe 커넥션 획득
     private Connection getConnection() throws SQLException {
         String URL = "jdbc:mysql://" + host + ":" + PORT + "/" + database;
-        return DriverManager.getConnection(URL, userName, password);
+        Connection connection = connectionHolder.get();
+        if (connection == null || connection.isClosed()) {
+            connection = DriverManager.getConnection(URL, userName, password);
+            connectionHolder.set(connection);
+        }
+        return connection;
+    }
+
+    public void close() {
+    }
+
+    public void startTransaction() {
+    }
+
+    public void rollback() {
+    }
+
+    public void commit() {
     }
 
     // throws SQLException을 명시하기 위한 Function<PreparedStatement, T> 함수형 인터페이스
@@ -148,14 +166,15 @@ public class SimpleDb {
             try (ResultSet rs = statement.executeQuery()) {
                 ResultSetMetaData metaData = rs.getMetaData();
                 int columnCount = metaData.getColumnCount();
-                T instance = clazz.getDeclaredConstructor().newInstance();
                 if (rs.next()) {
+                    T instance = clazz.getDeclaredConstructor().newInstance();
                     for (int i = 1; i <= columnCount; i++) {
                         // TODO : Reflection 데이터 캐싱
                         bindArguments(clazz, rs, metaData, i, instance);
                     }
+                    return instance;
                 }
-                return instance;
+                return null;
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
                 throw new RuntimeException(e);
@@ -260,21 +279,6 @@ public class SimpleDb {
         });
     }
 
-    public void close() {
-
-    }
-
-    public void startTransaction() {
-
-    }
-
-    public void rollback() {
-    }
-
-    public void commit() {
-
-    }
-
     // devMode true 설정시 log레벨 변경
     public void setDevMode(boolean devMode) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -307,9 +311,9 @@ public class SimpleDb {
             return this;
         }
 
-        // 가변인자에 아무 것도 전달되지 않아도 String sql만 전달 된다면 append는 컴파일 에러 발생하지않고 잘 작동 한다
-        // 하지만, 이 메소드가 따로 선언 되는 것이 더 나은 사용자 경험이라고 생각하여 추가하였다
-        // 이는 SimpleDb.run()도 마찬가지이다
+        // 가변인자에 아무 것도 전달되지 않아도 String sql만 전달 된다면 append는 컴파일 에러 발생하지않고 잘 작동함
+        // 하지만, 이 메소드가 따로 선언 되는 것이 더 나은 사용자 경험이라고 생각하여 추가하였음
+        // 이는 SimpleDb.run()도 마찬가지임
         public Sql append(String sql) {
             builder.append(sql).append(" ");
             return this;

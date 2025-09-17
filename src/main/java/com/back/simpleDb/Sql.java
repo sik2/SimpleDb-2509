@@ -68,7 +68,7 @@ public class Sql {
             else throw new RuntimeException("키 가져올 수 없음");
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("insert 작업 중 예외 발생", e);
         }
     }
 
@@ -77,7 +77,7 @@ public class Sql {
             return ps.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("update 작업 중 예외 발생", e);
         }
     }
 
@@ -86,7 +86,7 @@ public class Sql {
             return ps.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("delete 작업 중 예외 발생", e);
         }
     }
 
@@ -113,7 +113,7 @@ public class Sql {
             return records;
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("selectRows 작업 중 예외 발생", e);
         }
     }
 
@@ -148,7 +148,7 @@ public class Sql {
 
         } catch (SQLException | NoSuchFieldException | InvocationTargetException | InstantiationException |
                  IllegalAccessException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("selectRows<Class<?>> 작업 중 예외 발생", e);
         }
     }
 
@@ -161,7 +161,7 @@ public class Sql {
 
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("selectDatetime 작업 중 예외 발생", e);
         }
     }
 
@@ -181,7 +181,7 @@ public class Sql {
             return ids;
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("selectLongs 작업 중 예외 발생", e);
         }
     }
 
@@ -194,7 +194,7 @@ public class Sql {
 
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("selectString 작업 중 예외 발생", e);
         }
     }
 
@@ -207,7 +207,7 @@ public class Sql {
 
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("selectBoolean 작업 중 예외 발생", e);
         }
     }
 }

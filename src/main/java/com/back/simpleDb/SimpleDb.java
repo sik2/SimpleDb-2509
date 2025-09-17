@@ -35,7 +35,7 @@ public class SimpleDb {
 
             return conn;
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("DB Connection 중 예외 발생", e);
         }
     }
 
@@ -50,7 +50,7 @@ public class SimpleDb {
 
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("run 실행 중 예외 발생", e);
         }
     }
 
@@ -61,7 +61,7 @@ public class SimpleDb {
                 myConn.remove();
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("DB 종료 중 연결 에러", e);
         }
     }
 
@@ -75,7 +75,7 @@ public class SimpleDb {
         try {
             conn.setAutoCommit(false);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("DB 접근 오류 - 트랜잭션 시작", e);
         }
     }
 
@@ -86,7 +86,7 @@ public class SimpleDb {
             conn.rollback();
             conn.setAutoCommit(true);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("DB 접근 오류 - rollback", e);
         }
     }
 
@@ -97,7 +97,7 @@ public class SimpleDb {
             conn.commit();
             conn.setAutoCommit(true);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("DB 접근 오류 - 커밋", e);
         }
     }
 }

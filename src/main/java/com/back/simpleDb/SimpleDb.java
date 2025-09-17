@@ -7,6 +7,7 @@ import java.sql.*;
 public class SimpleDb {
     @Getter
     private final ThreadLocal<Connection> myConn = new ThreadLocal<>();
+    @Getter
     @Setter
     private boolean devMode = false;
 

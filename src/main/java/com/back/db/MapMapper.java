@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 class MapMapper {
+
     public Map<String, Object> mapRow(ResultSet rs) throws SQLException {
         Map<String, Object> row = new HashMap<>();
         ResultSetMetaData metaData = rs.getMetaData();

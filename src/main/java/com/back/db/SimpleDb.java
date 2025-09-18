@@ -36,11 +36,13 @@ public class SimpleDb {
         this.database = database;
     }
 
+    // connection 요청시 DriverManager에 의해 각 스레드마다 새로 생성하여 반환
     private Connection getConnection() throws SQLException {
         String URL = "jdbc:mysql://" + host + ":" + PORT + "/" + database;
         Connection connection = connectionHolder.get();
         if (connection == null || connection.isClosed()) {
             connection = DriverManager.getConnection(URL, userName, password);
+            log.debug("커넥션 생성 {}", connection);
             connectionHolder.set(connection);
         }
         return connection;
@@ -55,8 +57,8 @@ public class SimpleDb {
 
     private <T> T runTemplate(String sql, Object[] args, StatementCallback<T> callback) {
         // devMode일 경우, trace 레벨도 출력
-        log.info("Executing SQL: {}", sql.trim());
-        log.trace("Args {}", Arrays.toString(args));
+        log.info("SQL 전달값 : {}", sql.trim());
+        log.trace("매개변수 전달값 : {}", Arrays.toString(args));
         log.info("=======================================");
 
         // Transaction 분기점을 위한 connection 수동 반환
@@ -80,7 +82,7 @@ public class SimpleDb {
         } finally {
             try {
                 if (connection != null && connection.getAutoCommit()) {
-                    connection.close();
+                    close();
                     connectionHolder.remove();
                 }
             } catch (SQLException e) {
@@ -120,7 +122,15 @@ public class SimpleDb {
     public void close() {
         try {
             Connection connection = connectionHolder.get();
+
+            if (connection == null) {
+                log.warn("connection 이미 종료됨");
+                return;
+            }
+
+            log.debug("커넥션 종료 시도 {}", connection);
             connection.close();
+            log.debug("커넥션 종료 {}", connection);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
@@ -161,6 +171,12 @@ public class SimpleDb {
         return runTemplate(sql, args, PreparedStatement::executeUpdate);
     }
 
+    public Sql genSql() {
+        return new Sql(this);
+    }
+
+    // select 행 각각의 결과를 Map<String 칼럼명, Object 값>로 변환하고,
+    // 여러개의 행을 List<Map<String, Object>>으로 담아 반환
     List<Map<String, Object>> queryRowsToMaps(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
             try (ResultSet rs = statement.executeQuery()) {
@@ -189,6 +205,8 @@ public class SimpleDb {
         }
     }
 
+    // select 행 각각의 결과를 Entity로 변환하고,
+    // 여러개의 행을 List로 담아 반환
     <T> List<T> queryRows(String sql, Object[] args, Class<T> clazz) {
         return runTemplate(sql, args, statement -> {
             List<T> rows = new ArrayList<>();
@@ -197,7 +215,7 @@ public class SimpleDb {
                     T instance = entityMapper.mapRow(clazz, rs);
                     rows.add(instance);
                 }
-            } catch (Exception e) {
+            } catch (SQLException e) {
                 log.error(e.getMessage(), e);
                 throw new RuntimeException(e);
             }
@@ -235,6 +253,7 @@ public class SimpleDb {
         return columns.get(0);
     }
 
+    // boolean은 MySql 특성상 bit(1)이나 tinyInt(1)로 매핑되므로 getBoolean()으로 변환하여 반환
     Boolean queryBooleanColumn(String sql, Object... args) {
         return runTemplate(sql, args, statement -> {
             try (ResultSet rs = statement.executeQuery()) {
@@ -256,9 +275,5 @@ public class SimpleDb {
             // default
             logger.setLevel(Level.INFO);
         }
-    }
-
-    public Sql genSql() {
-        return new Sql(this);
     }
 }

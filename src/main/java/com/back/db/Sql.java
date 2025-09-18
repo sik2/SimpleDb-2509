@@ -60,12 +60,12 @@ public class Sql {
         return simpleDb.queryRowToMap(builder.toString(), bindingArgs.toArray());
     }
 
-    public <T> T selectRow(Class<T> clazz) {
-        return simpleDb.queryRow(builder.toString(), bindingArgs.toArray(), clazz);
-    }
-
     public List<Map<String, Object>> selectRows() {
         return simpleDb.queryRowsToMaps(builder.toString(), bindingArgs.toArray());
+    }
+
+    public <T> T selectRow(Class<T> clazz) {
+        return simpleDb.queryRow(builder.toString(), bindingArgs.toArray(), clazz);
     }
 
     public <T> List<T> selectRows(Class<T> clazz) {

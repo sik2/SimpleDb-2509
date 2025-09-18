@@ -38,6 +38,7 @@ class EntityMapper {
         }
     }
 
+    // 칼럼명, setter메소드 cacheMap생성
     private Map<String, Method> computeSetters(Class<?> clazz) {
         Map<String, Method> setters = new HashMap<>();
         try {
@@ -56,14 +57,15 @@ class EntityMapper {
         return setters;
     }
 
+    // 현재 column명과 field명이 일치하여 변환 로직없이 반환
     private String convertColumnName(String fieldName) {
         return fieldName;
     }
 
-    private String convertSetterName(String columnName, Class<?> fieldType) {
-        if (fieldType.equals(boolean.class) && columnName.startsWith("is")) {
-            return "set" + columnName.substring(2, 3).toUpperCase() + columnName.substring(3);
+    private String convertSetterName(String fieldName, Class<?> fieldType) {
+        if (fieldType.equals(boolean.class) && fieldName.startsWith("is")) {
+            return "set" + fieldName.substring(2, 3).toUpperCase() + fieldName.substring(3);
         }
-        return "set" + columnName.substring(0, 1).toUpperCase() + columnName.substring(1);
+        return "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
 }

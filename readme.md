@@ -222,8 +222,7 @@ MySql에서 반드시 따로 관리해줘야 하는 boolean과 다르게 다른 
 
 ---
 
-2주차 트러블 슈팅
-
+# 2주차 트러블 슈팅
 ## StringBuilder 대신 "+"를 이용해서 문자열을 겹합해도 좋을까?
 
 ![img.png](img.png)
@@ -254,10 +253,133 @@ boolean isXXX 로 boolean값을 설정하면
 
 getter는 isXXX, setter는 setXXX로 선언한다.
 
-## boolean은 특별 취급이 아님?(미해결)
+## boolean은 특별 취급이 아님? -> method.invoke()의 숨겨진 기능
 
-Article정보를 리플렉션으로 받아 값들을 바인딩 할 떄, boolean필드인 isBlind를 따로 처리하는 코드를 주석처리하고
-
-getObject로 받아와도 전혀 문제가 없었다.
+Article정보를 리플렉션으로 받아 값들을 바인딩 할 떄, boolean필드인 isBlind를 따로 처리하지 않아도 예외가 발생하지 않았다.
 
 왜 분명 앞의 t10, t11에선 boolean을 따로 취급해줘야 하는데 왜일까?
+
+-> 리플렉션의 method.invoke()에서 Integer(0), Integer(1) 값이 boolean 값으로 캐스팅된다.
+
+## connetion.close() 미작동 문제
+
+t17에서 스레드별 커넥션 획득 및 커밋은 정상 작동하는데 10초의 대기시간이 걸릴 때까지 테스트코드가 대기하는 문제가 발생했다.
+
+```java
+public void close() {
+  try {
+    Connection connection = connectionHolder.get();
+    log.debug("커넥션 종료 시도 {}", connection);
+    connection.close();
+    log.debug("커넥션 종료 {}", connection);
+  } catch (SQLException e) {
+    throw new RuntimeException(e);
+  } finally {
+    connectionHolder.remove();
+  }
+}
+```
+
+다음과 같이 로그를 넣어 close()호출 전에 이미 connection이 null로 닫혀있는 상태라는 것을 확인할 수 있었다.
+
+디버깅 결과 simpleDb자체의 로직보다는 t17과 다른 테스트코드와의 함수호출 차이 때문인 것을 알았다.
+
+t17만이 close()를 호출하는데, 다른 테스트 코드는 close()를 직접 호출하지 않는다.
+
+하지만 내부적으로는 autoCommit모드에서는 close()를 직접 호출하지 않아도 simpleDb.close()를 호출하도록 하였기 때문에
+
+직접 autoCommit모드에서 close()를 다시한번 호출한 t17에서 connection이 이미 null인 상태로 제대로 반환되지 않아 발생한 문제였다.
+
+- 여기에 Exception e로 처리했던(수정함) `queryRows`때문에 nullPointerException도 무시되어 디버깅이 오래걸렸다.
+
+어찌됐든 요구사항에서는 simpleDb.close()호출전까지 커넥션을 닫지 말라고 명시되어있지만,
+
+t17이 아닌 다른 코드에서 명시적으로 close()를 호출 하지 않는다고 해서 
+
+내부적으로 close()를 호출하지 않는 것은 그것대로 문제라고 생각하기 때문에 다음과 같은 
+
+null을 가드하는 if문을 추가하였다. 
+
+```java
+import java.sql.SQLException;
+
+public void close() {
+  try {
+    Connection connection = connectionHolder.get();
+
+    if (connection == null) {
+      log.warn("connection 이미 종료됨");
+      return;
+    }
+
+    log.debug("커넥션 종료 시도 {}", connection);
+    connection.close();
+    log.debug("커넥션 종료 {}", connection);
+  } catch (SQLException e) {
+    throw new RuntimeException(e);
+  } finally {
+    connectionHolder.remove();
+  }
+}
+```
+
+# 고민한 점
+## run과 appendIn의 오버로딩
+
+![img_1.png](img_1.png)
+
+`run(String sql, Object... args)`는 만약 매개변수가 1개만 전달되었을 때, 
+
+JAVA의 가변인자 내부처리로 run(String sql, new Object[0])와 같이 전달되어 잘 실행된다.
+
+또한, 가변인자를 선언한 메소드를 작성한 개발자는 가변인자에 아무것도 전달되지 않더라도 문제가 없도록
+
+구현을 하였을 것이다.
+
+하지만 이 메소드를 사용하는 사용자의 입장에서 이 메소드가 정말 `Select * from Article`과 같이 String sql만 전달해서
+
+사용될 수 있는 메소드인지 걱정할 수 있다고 생각했고
+
+이로 인해 내부코드를 살펴보게 만든다거나 방어적 프로그래밍을 해야한다면 이는 좋지 않은 사용자 경험이라고 생각했다.
+
+따라서 가변인자에 대해 잘 모르더라도 IDE의 지원을 통해 매개변수 1개인 `run`이나 `appendIn`을 발견해
+
+args에 아무것도 전달하지 않아도 사용할 수 있는 메소드라는 것을 적극적으로 표현하고자 하였다.
+
+## devMode 필드 선언
+
+현재 devMode는 필드로 선언되어 있지 않다.
+
+이는 devMode의 상태를 simpleDb가 따로 필드로 선언하여 유지할 필요가 없다고 생각했기 때문이다.
+
+왜냐하면 이 코드는 로그 출력이 온전히 logger를 통해서 이루어지고 있으며 
+
+setDevMode()에 의해 logger의 레벨 수준을 동적으로 제어하도록 구현하였기 때문에 devMode는 온전히 이 logger를 위한 상태이다.
+
+따라서, setDevMode에 의해 logger의 상태가 변경되고 logger가 이를 갖고 있다면
+
+굳이 simpleDb가 devMode 상태를 관리할 이유는 없다고 생각했다.
+
+### devMode(boolean) VS devMode()
+
+사실 이 경우 필드를 제어하지 않는 느낌을 주기 위해 테스트코드에서 제시해준 setDevMode(true)대신 setDevMode()로
+
+매개변수가 없이 선언된다면 더 좋을 것 같다고 생각하기도 했으나, 
+
+사용자 입장에선 또 `setProdMode()`와 같이 setXXXMode 메소드를 찾아야한다는 점에서 장단점이 존재하는 것 같다.
+
+devMode이거나 아니거나인 지금의 상황에서는 현재의 메소드 선언이 가장 좋아보인다.
+
+## 단일먼저 구현 VS 다수부터 구현
+
+일반적으로 단일 로직을 먼저 구현하는 쪽을 항상 택해왔던 것 같다.
+
+하지만 이번에는 다수 로직을 먼저 구현하는 쪽을 택했는데, 이는 아무래도 rs.next()의 동작이 가장 컸던 것 같다.
+
+while(rs.next())를 호출하며 단일 로직 내부에 숨어있는 if(rs.next())를 호출되어 커서가 2번씩 이동한다거나,
+
+다수를 구현하는 부분의 들여쓰기 레벨이 그렇게 크지 않아 가독성이 괜찮았다는 점이 굉장히 주효했던 것 같다.
+
+앞으로도 단일부터 구현하는 쪽을 주로 사용하겠지만, 이렇게 다수부터 구현하는 쪽도 무시할만한 오버헤드만 있고
+
+압도적인 작성편의성이 있다면 고려해볼 수 있을 것 같다.

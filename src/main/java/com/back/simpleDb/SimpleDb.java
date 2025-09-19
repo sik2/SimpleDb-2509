@@ -4,7 +4,7 @@ import lombok.Setter;
 
 import java.sql.*;
 
-public class SimpleDb {
+public class SimpleDb implements AutoCloseable {
     @Getter
     private final ThreadLocal<Connection> myConn = new ThreadLocal<>();
     @Getter
@@ -28,7 +28,7 @@ public class SimpleDb {
     public Connection getConnection() {
         try {
             Connection conn = myConn.get();
-            if (conn == null) {
+            if (conn == null || conn.isClosed()) {
                 conn = DriverManager.getConnection(this.url, this.user, this.password);
                 myConn.set(conn);
             }
@@ -54,6 +54,7 @@ public class SimpleDb {
         }
     }
 
+    @Override
     public void close() {
         try {
             if (myConn.get() != null) {

@@ -1,7 +1,7 @@
 package com.back.simpleDb;
 
-
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class Sql {
@@ -115,6 +115,38 @@ public class Sql {
                 result.add(resultSetToMap(rs));
             }
             return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public LocalDateTime selectDatetime() {
+        try (PreparedStatement ps = buildPs();
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            Timestamp ts = rs.getTimestamp(1);
+            return ts != null ? ts.toLocalDateTime() : null;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Long selectLong() {
+        try (PreparedStatement ps = buildPs();
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getLong(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String selectString() {
+        try (PreparedStatement ps = buildPs();
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getString(1);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

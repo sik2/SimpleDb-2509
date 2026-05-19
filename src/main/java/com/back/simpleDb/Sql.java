@@ -28,93 +28,53 @@ public class Sql {
     }
 
     public long insert(){
-        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
-
-        PreparedStatement ps = null;
-        try {
-            ps = simpleDb.getconnection().
-                    prepareStatement(query.toString(), Statement.RETURN_GENERATED_KEYS);
-            for(int i=0; i< params.size(); i++)
-            {
-                ps.setObject(i+1, params.get(i));
-            }
-
-            ps.executeUpdate();
-
-            ResultSet rs = ps.getGeneratedKeys();
-            rs.next();
-            return rs.getLong(1);
-        }
-        catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            if(ps !=null)
-            {
-                try{
-                    ps.close();
-                }catch (SQLException e){
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+        return (long) submit();
     }
 
     public int update() {
-        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
-
-        PreparedStatement ps = null;
-        try {
-            ps = simpleDb.getconnection().
-                    prepareStatement(query.toString());
-            for(int i=0; i< params.size(); i++)
-            {
-                ps.setObject(i+1, params.get(i));
-            }
-
-            return ps.executeUpdate();
-        }
-        catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            if(ps !=null)
-            {
-                try{
-                    ps.close();
-                }catch (SQLException e){
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+        return (int) submit();
     }
 
     public int delete() {
+        return (int) submit();
+    }
+
+    private Object submit()
+    {
         if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
 
-        PreparedStatement ps = null;
-        try {
-            ps = simpleDb.getconnection().
-                    prepareStatement(query.toString());
-            for(int i=0; i< params.size(); i++)
-            {
-                ps.setObject(i+1, params.get(i));
-            }
+        String sqlUpper = query.toString().trim().toUpperCase();
 
-            return ps.executeUpdate();
-        }
-        catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            if(ps !=null)
+        try{
+            if(sqlUpper.startsWith("INSERT"))
             {
-                try{
-                    ps.close();
-                }catch (SQLException e){
-                    throw new RuntimeException(e);
+                try(PreparedStatement ps = simpleDb.getconnection()
+                                            .prepareStatement(query.toString(),Statement.RETURN_GENERATED_KEYS))
+                {
+                    bindParams(ps);
+                    ps.execute();
+                    ResultSet rs = ps.getGeneratedKeys();
+                    rs.next();
+                    return rs.getLong(1);
+                }
+
+            }else{
+                try(PreparedStatement ps = simpleDb.getconnection()
+                                            .prepareStatement(query.toString()))
+                {
+                    bindParams(ps);
+                    return ps.executeUpdate();
                 }
             }
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void bindParams(PreparedStatement ps) throws SQLException {
+        for(int i=0; i< params.size(); i++)
+        {
+            ps.setObject(i+1, params.get(i));
         }
     }
 }

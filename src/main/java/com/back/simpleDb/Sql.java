@@ -1,5 +1,8 @@
 package com.back.simpleDb;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -196,6 +199,20 @@ public class Sql {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+    private static final ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
+
+    public <T> T selectRow(Class<T> clazz) {
+        Map<String, Object> row = selectRow(); // 이미 구현한 메서드 재사용
+        if (row == null) return null;
+        return mapper.convertValue(row, clazz);
+    }
+
+    public <T> List<T> selectRows(Class<T> clazz) {
+        return selectRows().stream() // 이미 구현한 메서드 재사용
+                .map(row -> mapper.convertValue(row, clazz))
+                .collect(Collectors.toList());
     }
 
 }

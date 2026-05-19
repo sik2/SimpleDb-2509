@@ -151,5 +151,23 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+    public Boolean selectBoolean() {
+        try (PreparedStatement ps = buildPs();
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            Object val = rs.getObject(1);
+
+            // BIT(1) 컬럼 → byte[]로 옴
+            if (val instanceof byte[] bytes) return bytes[0] != 0;
+            // 1=1, 1=0 표현식 → Boolean으로 옴
+            if (val instanceof Boolean b) return b;
+            // 혹시 숫자로 오는 경우
+            if (val instanceof Number n) return n.intValue() != 0;
+
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

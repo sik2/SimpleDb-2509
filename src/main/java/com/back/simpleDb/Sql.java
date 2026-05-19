@@ -90,6 +90,31 @@ public class Sql {
     }
 
     public int delete() {
-        return 0;
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        PreparedStatement ps = null;
+        try {
+            ps = simpleDb.getconnection().
+                    prepareStatement(query.toString());
+            for(int i=0; i< params.size(); i++)
+            {
+                ps.setObject(i+1, params.get(i));
+            }
+
+            return ps.executeUpdate();
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            if(ps !=null)
+            {
+                try{
+                    ps.close();
+                }catch (SQLException e){
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 }

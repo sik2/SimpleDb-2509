@@ -1,5 +1,6 @@
 package com.back.simpleDb;
 
+
 import java.sql.*;
 import java.util.*;
 
@@ -63,7 +64,60 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
     public int delete() {
         return update();
     }
+
+
+
+    private Map<String, Object> resultSetToMap(ResultSet rs) throws SQLException {
+        ResultSetMetaData meta = rs.getMetaData();
+        Map<String, Object> map = new LinkedHashMap<>();
+
+        for (int i = 1; i <= meta.getColumnCount(); i++) {
+            String col = meta.getColumnName(i);
+            Object val = rs.getObject(i);
+            map.put(col, convertValue(val));
+        }
+        return map;
+    }
+
+    private Object convertValue(Object val) {
+        if (val == null) return null;
+
+        if (val instanceof Timestamp ts) {
+            return ts.toLocalDateTime();
+        }
+
+        if (val instanceof byte[] bytes) {
+            return bytes[0] != 0;
+        }
+
+        return val;
+    }
+
+    public Map<String, Object> selectRow() {
+        try (PreparedStatement ps = buildPs();
+             ResultSet rs = ps.executeQuery()) {
+            if (!rs.next()) return null;
+            return resultSetToMap(rs);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<Map<String, Object>> selectRows() {
+        try (PreparedStatement ps = buildPs();
+             ResultSet rs = ps.executeQuery()) {
+            List<Map<String, Object>> result = new ArrayList<>();
+            while (rs.next()) {
+                result.add(resultSetToMap(rs));
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

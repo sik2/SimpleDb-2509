@@ -25,7 +25,7 @@ public class SimpleDbTest {
 
     @BeforeAll
     public static void beforeAll() {
-        simpleDb = new SimpleDb("localhost", "root", "root123414", "simpleDb__test");
+        simpleDb = new SimpleDb("localhost", "root", "1234", "simpleDb__test");
         simpleDb.setDevMode(true);
 
         createArticleTable();
@@ -77,7 +77,7 @@ public class SimpleDbTest {
     @Test
     @DisplayName("insert")
     public void t001() {
-        com.back.Sql sql = simpleDb.genSql();
+        Sql sql = simpleDb.genSql();
         /*
         == rawSql ==
         INSERT INTO article
@@ -354,8 +354,8 @@ public class SimpleDbTest {
         */
         sql.append("SELECT id")
                 .append("FROM article")
-                .appendIn("WHERE id IN (?)", ids)
-                .appendIn("ORDER BY FIELD (id, ?)", ids);
+                .appendIn("WHERE id IN (?)", (Object[]) ids)
+                .appendIn("ORDER BY FIELD (id, ?)", (Object[])  ids);
 
         List<Long> foundIds = sql.selectLongs();
 

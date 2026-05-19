@@ -1,28 +1,97 @@
 package com.back;
 
+import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class Sql {
-    public Sql append(String sql, Object... args) {
-        return null;
+    private final SimpleDb simpleDb;
+
+    private final StringBuilder sqlBuilder =
+            new StringBuilder();
+
+    private final List<Object> args =
+            new ArrayList<>();
+
+    public Sql(SimpleDb simpleDb) {
+        this.simpleDb = simpleDb;
     }
 
-    public Sql appendIn(String sql, Object... args) {
-        return null;
+    public Sql append(String sql) {
+        sqlBuilder.append(sql).append("\n");
+        return this;
+    }
+
+    public Sql append(String sql, Object... args) {
+        sqlBuilder.append(sql).append("\n");
+        this.args.addAll(Arrays.asList(args));
+        return this;
+    }
+
+    public String getRawSql() {
+        return sqlBuilder.toString();
+    }
+
+    public String getCompleteSql() {
+        return simpleDb.toCompleteSql(getRawSql(), args.toArray()
+        );
+    }
+
+    private void logIfDevMode() {
+        if (simpleDb.isDevMode()) {
+            System.out.println("== rawSql ==");
+            System.out.println(getCompleteSql());
+        }
     }
 
     public long insert() {
-        return 0;
+        logIfDevMode();
+        String sql = getRawSql();
+        try (
+                Connection conn = simpleDb.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
+        ) {
+            bindParams(pstmt);
+            pstmt.executeUpdate();
+            ResultSet rs = pstmt.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+            return -1;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public int update() {
-        return 0;
+        logIfDevMode();
+        String sql = getRawSql();
+        try (
+                Connection conn = simpleDb.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)
+        ) {
+            bindParams(pstmt);
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public int delete() {
         return 0;
+    }
+
+    private void bindParams(PreparedStatement pstmt) throws SQLException {
+        for (int i = 0; i < args.size(); i++) {
+            pstmt.setObject(i + 1, args.get(i));
+        }
+    }
+
+    public Sql appendIn(String sql, Object... args){
+        return null;
     }
 
     public <T> List<T> selectRows(Class<T> clazz) {

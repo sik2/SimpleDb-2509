@@ -1,8 +1,9 @@
 package com.back.simpleDb;
 
 import com.back.Article;
+import com.back.SimpleDb;
+import com.back.Sql;
 import org.junit.jupiter.api.*;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -76,7 +77,7 @@ public class SimpleDbTest {
     @Test
     @DisplayName("insert")
     public void t001() {
-        Sql sql = simpleDb.genSql();
+        com.back.Sql sql = simpleDb.genSql();
         /*
         == rawSql ==
         INSERT INTO article

@@ -71,7 +71,7 @@ public class Sql {
         String sql = getRawSql();
         try (
                 Connection conn = simpleDb.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)
+                PreparedStatement pstmt = conn.prepareStatement(sql);
         ) {
             bindParams(pstmt);
             return pstmt.executeUpdate();
@@ -81,7 +81,21 @@ public class Sql {
     }
 
     public int delete() {
-        return 0;
+        logIfDevMode();
+        String sql = getRawSql();
+        try (
+                Connection conn = simpleDb.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+        ) {
+            bindParams(pstmt);
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<Map<String, Object>> selectRows() {
+        return null;
     }
 
     private void bindParams(PreparedStatement pstmt) throws SQLException {
@@ -95,10 +109,6 @@ public class Sql {
     }
 
     public <T> List<T> selectRows(Class<T> clazz) {
-        return null;
-    }
-
-    public List<Map<String, Object>> selectRows() {
         return null;
     }
 

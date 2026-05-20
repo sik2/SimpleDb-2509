@@ -2,10 +2,7 @@ package com.back;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Sql {
     private final SimpleDb simpleDb;
@@ -95,7 +92,31 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-        return null;
+        logIfDevMode();
+        String sql = getRawSql();
+
+        try {
+            Connection conn = simpleDb.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            bindParams(pstmt);
+            ResultSet rs = pstmt.executeQuery();
+            ResultSetMetaData meta = rs.getMetaData();
+            int colCount = meta.getColumnCount();
+
+            List<Map<String, Object>> rows = new ArrayList<>();
+
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                for (int i = 1; i <= colCount; i++) {
+                    row.put(meta.getColumnName(i), rs.getObject(i));
+                }
+                rows.add(row);
+            }
+
+            return rows;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void bindParams(PreparedStatement pstmt) throws SQLException {

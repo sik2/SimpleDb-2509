@@ -151,7 +151,7 @@ public class SimpleDbTest {
         == rawSql ==
         SELECT *
         FROM article
-        ORDER BY id ASC
+        ORDER B Y id ASC
         LIMIT 3
         */
         sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");

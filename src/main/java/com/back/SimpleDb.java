@@ -65,10 +65,6 @@ public class SimpleDb {
         return sql;
     }
 
-    public Sql run(String sql) {
-        return null;
-    }
-
     public Sql genSql() {
         return new Sql(this);
     }

@@ -93,36 +93,53 @@ public class Sql {
 
     public List<Map<String, Object>> selectRows() {
         logIfDevMode();
-        String sql = getRawSql();
-
         try {
             Connection conn = simpleDb.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql);
+            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
             bindParams(pstmt);
             ResultSet rs = pstmt.executeQuery();
             ResultSetMetaData meta = rs.getMetaData();
             int colCount = meta.getColumnCount();
 
             List<Map<String, Object>> rows = new ArrayList<>();
-
             while (rs.next()) {
                 Map<String, Object> row = new LinkedHashMap<>();
                 for (int i = 1; i <= colCount; i++) {
-                    row.put(meta.getColumnName(i), rs.getObject(i));
+                    row.put(meta.getColumnName(i), toJavaType(rs, i, meta.getColumnTypeName(i)));
                 }
                 rows.add(row);
             }
-
             return rows;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private Object toJavaType(ResultSet rs, int index, String typeName) throws SQLException {
+        return switch (typeName.toUpperCase()) {
+            case "DATETIME", "TIMESTAMP" -> {
+                Timestamp ts = rs.getTimestamp(index);
+                yield ts != null ? ts.toLocalDateTime() : null;
+            }
+            case "BIT" -> rs.getBoolean(index);
+            default -> rs.getObject(index);
+        };
+    }
+
     private void bindParams(PreparedStatement pstmt) throws SQLException {
         for (int i = 0; i < args.size(); i++) {
             pstmt.setObject(i + 1, args.get(i));
         }
+    }
+
+    public Map<String, Object> selectRow() {
+        List<Map<String, Object>> rows = selectRows();
+        if (rows.isEmpty()) return null;
+        return rows.get(0);
+    }
+
+    public LocalDateTime selectDatetime() {
+        return null;
     }
 
     public Sql appendIn(String sql, Object... args){
@@ -133,18 +150,10 @@ public class Sql {
         return null;
     }
 
-    public Map<String, Object> selectRow() {
-        return null;
-    }
-
     public <T> T selectRow(Class<T> clazz) {
         return null;
     }
 
-
-    public LocalDateTime selectDatetime() {
-        return null;
-    }
 
     public Long selectLong() {
         return null;

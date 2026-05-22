@@ -44,6 +44,18 @@ public class Sql {
         }
     }
 
+    private ResultSet executeQuery() {
+        logIfDevMode();
+        try {
+            Connection conn = simpleDb.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
+            bindParams(pstmt);
+            return pstmt.executeQuery();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public long insert() {
         logIfDevMode();
         String sql = getRawSql();
@@ -182,6 +194,16 @@ public class Sql {
         }
     }
 
+    public Boolean selectBoolean() {
+        try {
+            ResultSet rs = executeQuery();
+            if (rs.next()) return rs.getBoolean(1);
+            return null;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Sql appendIn(String sql, Object... args){
         return null;
     }
@@ -194,10 +216,6 @@ public class Sql {
         return null;
     }
 
-
-    public Boolean selectBoolean() {
-        return null;
-    }
 
     public List<Long> selectLongs() {
         return null;

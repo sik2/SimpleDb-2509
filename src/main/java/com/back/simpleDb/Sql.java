@@ -45,15 +45,15 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-
+        List<Map<String, Object>> selectedRows = simpleDb.runForRows(sql, params.toArray());
         sql = "";
-        return null;
+        return selectedRows;
     }
 
     public Map<String, Object> selectRow() {
-
+        Map<String, Object> selectedRow = simpleDb.runForRows(sql, params.toArray()).getFirst();
         sql = "";
-        return null;
+        return selectedRow;
     }
 
     public <T> List<T> selectRows(Class<T> cls) {

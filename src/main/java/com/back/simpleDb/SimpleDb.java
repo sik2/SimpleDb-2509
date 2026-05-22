@@ -29,35 +29,61 @@ public class SimpleDb {
         return new Sql(this);
     }
 
-    public void run(String sql, Object... params) {
-        String url = "jdbc:mysql://" + host + ":3306/" +databaseName;
+    @FunctionalInterface
+    private interface StatementHandler<T> {
+        T handle(PreparedStatement stmt) throws SQLException;
+    }
+
+    private void setParams(PreparedStatement stmt, Object... params) throws SQLException {
+        for (int i = 0; i < params.length; i++) {
+            stmt.setObject(i + 1, params[i]);
+        }
+    }
+
+    private <T> T execute(
+            String sql,
+            Object[] params,
+            StatementHandler<T> handler
+    ) {
+        String url = "jdbc:mysql://" + host + ":3306/" + databaseName;
+
         try (
-            Connection conn = DriverManager.getConnection(url, username, password);
-            PreparedStatement stmt = conn.prepareStatement(sql);
+                Connection conn = DriverManager.getConnection(url, username, password);
+                PreparedStatement stmt = conn.prepareStatement(sql)
         ) {
-            for (int i = 1; i <= params.length; ++i)
-            {
-                stmt.setObject(i, params[i-1]);
-            }
+            setParams(stmt, params);
 
-            stmt.executeUpdate();
-
+            return handler.handle(stmt);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public long insert(String sql, Object... params) {
+    private <T> T executeWithGeneratedKeys(
+            String sql,
+            Object[] params,
+            StatementHandler<T> handler
+    ) {
         String url = "jdbc:mysql://" + host + ":3306/" + databaseName;
 
         try (
                 Connection conn = DriverManager.getConnection(url, username, password);
                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
         ) {
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
-            }
+            setParams(stmt, params);
 
+            return handler.handle(stmt);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void run(String sql, Object... params) {
+        execute(sql, params, PreparedStatement::executeUpdate);
+    }
+
+    public long insert(String sql, Object... params) {
+        return executeWithGeneratedKeys(sql, params, stmt -> {
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -66,40 +92,16 @@ public class SimpleDb {
                 }
             }
 
-            return 0;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+            return 0L;
+        });
     }
 
     public int runForRowsCount(String sql, Object... params) {
-        String url = "jdbc:mysql://" + host + ":3306/" + databaseName;
-
-        try (
-                Connection conn = DriverManager.getConnection(url, username, password);
-                PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
-        ) {
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
-            }
-
-            return stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return execute(sql, params, stmt -> stmt.executeUpdate());
     }
 
     public List<Map<String, Object>> runForRows(String sql, Object... params) {
-        String url = "jdbc:mysql://" + host + ":3306/" + databaseName;
-
-        try (
-                Connection conn = DriverManager.getConnection(url, username, password);
-                PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
-        ) {
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
-            }
-
+        return execute(sql, params, stmt -> {
             try (ResultSet rs = stmt.executeQuery()) {
                 List<Map<String, Object>> rows = new ArrayList<>();
 
@@ -110,10 +112,7 @@ public class SimpleDb {
                     Map<String, Object> row = new LinkedHashMap<>();
 
                     for (int i = 1; i <= columnCount; i++) {
-                        String columnName = metaData.getColumnName(i);
-                        Object value = rs.getObject(i);
-
-                        row.put(columnName, value);
+                        row.put(metaData.getColumnName(i), rs.getObject(i));
                     }
 
                     rows.add(row);
@@ -121,9 +120,7 @@ public class SimpleDb {
 
                 return rows;
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     public void close() {

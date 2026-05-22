@@ -139,7 +139,19 @@ public class Sql {
     }
 
     public LocalDateTime selectDatetime() {
-        return null;
+        logIfDevMode();
+        try {
+            Connection conn = simpleDb.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
+            bindParams(pstmt);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getTimestamp(1).toLocalDateTime();
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Sql appendIn(String sql, Object... args){

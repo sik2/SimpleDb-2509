@@ -6,12 +6,8 @@ import java.util.*;
 
 public class Sql {
     private final SimpleDb simpleDb;
-
-    private final StringBuilder sqlBuilder =
-            new StringBuilder();
-
-    private final List<Object> args =
-            new ArrayList<>();
+    private final StringBuilder sqlBuilder = new StringBuilder();
+    private final List<Object> args = new ArrayList<>();
 
     public Sql(SimpleDb simpleDb) {
         this.simpleDb = simpleDb;
@@ -33,14 +29,38 @@ public class Sql {
     }
 
     public String getCompleteSql() {
-        return simpleDb.toCompleteSql(getRawSql(), args.toArray()
-        );
+        return simpleDb.toCompleteSql(getRawSql(), args.toArray());
     }
 
     private void logIfDevMode() {
         if (simpleDb.isDevMode()) {
             System.out.println("== rawSql ==");
             System.out.println(getCompleteSql());
+        }
+    }
+
+    private void bindParams(PreparedStatement pstmt) throws SQLException {
+        for (int i = 0; i < args.size(); i++) {
+            pstmt.setObject(i + 1, args.get(i));
+        }
+    }
+
+    private long execute(boolean returnGeneratedKeys) {
+        logIfDevMode();
+        int keyOption = returnGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS;
+        try {
+            Connection conn = simpleDb.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(getRawSql(), keyOption);
+            bindParams(pstmt);
+            int affected = pstmt.executeUpdate();
+            if (returnGeneratedKeys) {
+                ResultSet rs = pstmt.getGeneratedKeys();
+                if (rs.next()) return rs.getLong(1);
+                return -1;
+            }
+            return affected;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -51,77 +71,6 @@ public class Sql {
             PreparedStatement pstmt = conn.prepareStatement(getRawSql());
             bindParams(pstmt);
             return pstmt.executeQuery();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public long insert() {
-        logIfDevMode();
-        String sql = getRawSql();
-        try (
-                Connection conn = simpleDb.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
-        ) {
-            bindParams(pstmt);
-            pstmt.executeUpdate();
-            ResultSet rs = pstmt.getGeneratedKeys();
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-            return -1;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public int update() {
-        logIfDevMode();
-        String sql = getRawSql();
-        try (
-                Connection conn = simpleDb.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-        ) {
-            bindParams(pstmt);
-            return pstmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public int delete() {
-        logIfDevMode();
-        String sql = getRawSql();
-        try (
-                Connection conn = simpleDb.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-        ) {
-            bindParams(pstmt);
-            return pstmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public List<Map<String, Object>> selectRows() {
-        logIfDevMode();
-        try {
-            Connection conn = simpleDb.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
-            bindParams(pstmt);
-            ResultSet rs = pstmt.executeQuery();
-            ResultSetMetaData meta = rs.getMetaData();
-            int colCount = meta.getColumnCount();
-
-            List<Map<String, Object>> rows = new ArrayList<>();
-            while (rs.next()) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                for (int i = 1; i <= colCount; i++) {
-                    row.put(meta.getColumnName(i), toJavaType(rs, i, meta.getColumnTypeName(i)));
-                }
-                rows.add(row);
-            }
-            return rows;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -138,28 +87,38 @@ public class Sql {
         };
     }
 
-    private void bindParams(PreparedStatement pstmt) throws SQLException {
-        for (int i = 0; i < args.size(); i++) {
-            pstmt.setObject(i + 1, args.get(i));
+    public long insert() { return execute(true); }
+    public int update() { return (int) execute(false); }
+    public int delete() { return (int) execute(false); }
+
+    public List<Map<String, Object>> selectRows() {
+        try {
+            ResultSet rs = executeQuery();
+            ResultSetMetaData meta = rs.getMetaData();
+            int colCount = meta.getColumnCount();
+            List<Map<String, Object>> rows = new ArrayList<>();
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                for (int i = 1; i <= colCount; i++) {
+                    row.put(meta.getColumnName(i), toJavaType(rs, i, meta.getColumnTypeName(i)));
+                }
+                rows.add(row);
+            }
+            return rows;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
     public Map<String, Object> selectRow() {
         List<Map<String, Object>> rows = selectRows();
-        if (rows.isEmpty()) return null;
-        return rows.get(0);
+        return rows.isEmpty() ? null : rows.get(0);
     }
 
     public LocalDateTime selectDatetime() {
-        logIfDevMode();
         try {
-            Connection conn = simpleDb.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
-            bindParams(pstmt);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getTimestamp(1).toLocalDateTime();
-            }
+            ResultSet rs = executeQuery();
+            if (rs.next()) return rs.getTimestamp(1).toLocalDateTime();
             return null;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -167,12 +126,8 @@ public class Sql {
     }
 
     public Long selectLong() {
-        logIfDevMode();
         try {
-            Connection conn = simpleDb.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
-            bindParams(pstmt);
-            ResultSet rs = pstmt.executeQuery();
+            ResultSet rs = executeQuery();
             if (rs.next()) return rs.getLong(1);
             return null;
         } catch (SQLException e) {
@@ -181,12 +136,8 @@ public class Sql {
     }
 
     public String selectString() {
-        logIfDevMode();
         try {
-            Connection conn = simpleDb.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
-            bindParams(pstmt);
-            ResultSet rs = pstmt.executeQuery();
+            ResultSet rs = executeQuery();
             if (rs.next()) return rs.getString(1);
             return null;
         } catch (SQLException e) {

@@ -154,6 +154,20 @@ public class Sql {
         }
     }
 
+    public Long selectLong() {
+        logIfDevMode();
+        try {
+            Connection conn = simpleDb.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(getRawSql());
+            bindParams(pstmt);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) return rs.getLong(1);
+            return null;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Sql appendIn(String sql, Object... args){
         return null;
     }
@@ -166,10 +180,6 @@ public class Sql {
         return null;
     }
 
-
-    public Long selectLong() {
-        return null;
-    }
 
     public String selectString() {
         return null;

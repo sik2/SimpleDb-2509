@@ -46,8 +46,8 @@ public class Sql {
     }
 
     public Sql appendIn(String sqlPart, Object... args) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
-    public int update() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
-    public int delete() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    public int update() { return executeUpdateLike("UPDATE"); }
+    public int delete() { return executeUpdateLike("DELETE"); }
     public List<Map<String, Object>> selectRows() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public Map<String, Object> selectRow() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public LocalDateTime selectDatetime() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
@@ -57,4 +57,15 @@ public class Sql {
     public List<Long> selectLongs() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+
+    private int executeUpdateLike(String actionName) {
+        String sql = sqlBuilder.toString();
+        try (var conn = simpleDb.getConnection();
+             var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            return pstmt.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(actionName + " 실행 중 오류가 발생했습니다.", e);
+        }
+    }
 }

@@ -143,7 +143,7 @@ public class Sql {
     public Long selectLong() {
         if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
 
-        try{
+        try {
             PreparedStatement ps = simpleDb.getconnection().prepareStatement(query.toString());
 
             bindParams(ps);
@@ -156,5 +156,9 @@ public class Sql {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String selectString() {
+        return "";
     }
 }

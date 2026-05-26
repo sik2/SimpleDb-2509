@@ -70,4 +70,10 @@ public class SimpleDb {
     public Sql genSql(){
         return new Sql(this,devMode);
     }
+
+    public void startTransaction() {
+    }
+
+    public void rollback() {
+    }
 }

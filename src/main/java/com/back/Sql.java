@@ -161,6 +161,17 @@ public class Sql {
         return append(expandedSql, args);
     }
 
+    public List<Long> selectLongs() {
+        try {
+            ResultSet rs = executeQuery();
+            List<Long> result = new ArrayList<>();
+            while (rs.next()) result.add(rs.getLong(1));
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public <T> List<T> selectRows(Class<T> clazz) {
         return null;
     }
@@ -169,8 +180,4 @@ public class Sql {
         return null;
     }
 
-
-    public List<Long> selectLongs() {
-        return null;
-    }
 }

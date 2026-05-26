@@ -2,13 +2,8 @@ package com.back.simpleDb;
 
 import com.back.SimpleDb;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 
 public class Sql {
     private final SimpleDb simpleDb;
@@ -75,6 +70,39 @@ public class Sql {
         for(int i=0; i< params.size(); i++)
         {
             ps.setObject(i+1, params.get(i));
+        }
+    }
+
+    public List<Map<String, Object>> selectRows() {
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        try{
+            PreparedStatement ps = simpleDb.getconnection().prepareStatement(query.toString());
+
+            bindParams(ps);
+            ResultSet rs = ps.executeQuery();
+
+            ResultSetMetaData meta = rs.getMetaData();
+            int columCount = meta.getColumnCount();
+
+            List<Map<String, Object>> rows = new ArrayList<>();
+
+
+            while (rs.next())
+            {
+                 Map<String,Object> row = new LinkedHashMap<>();
+                 for(int i=1; i<= columCount; i++)
+                 {
+                    row.put(meta.getColumnLabel(i), rs.getObject(i));
+                 }
+
+                 rows.add(row);
+            }
+
+            return rows;
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

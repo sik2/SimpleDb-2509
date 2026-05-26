@@ -11,9 +11,9 @@ public class Article {
 
     private long id;
     private String title;
-    private String Body;
-    private LocalDateTime CreatedDate;
-    private LocalDateTime ModifiedDate;
+    private String body;
+    private LocalDateTime createdDate;
+    private LocalDateTime modifiedDate;
     private boolean isBlind;
 
 }

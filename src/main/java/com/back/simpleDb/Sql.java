@@ -2,7 +2,9 @@ package com.back.simpleDb;
 
 import com.back.Article;
 import com.back.SimpleDb;
+import lombok.SneakyThrows;
 
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -225,7 +227,34 @@ public class Sql {
         }
     }
 
-    public <T> List<T> selectRows(Class<?> article) {
-        return null;
+    public <T> List<T> selectRows(Class<T> article) {
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        List<Map<String, Object>> rows = selectRows();
+
+        List<T> result = new ArrayList<>();
+        for(Map<String,Object> row : rows){
+            T instacne = mapToObject(row, article);
+            result.add(instacne);
+        }
+
+        return result;
+    }
+
+    @SneakyThrows
+    private <T> T mapToObject(Map<String, Object> row, Class<T> article) {
+        T instance =  article.getDeclaredConstructor().newInstance();
+
+        for(Map.Entry<String, Object> entry : row.entrySet())
+        {
+            String columName = entry.getKey();
+            Object value = entry.getValue();
+
+            Field field = article.getDeclaredField(columName);
+            field.setAccessible(true);
+            field.set(instance,value);
+        }
+
+        return instance;
     }
 }

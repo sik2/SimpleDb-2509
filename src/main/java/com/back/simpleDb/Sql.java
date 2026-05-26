@@ -175,4 +175,8 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public Boolean selectBoolean() {
+        return true;
+    }
 }

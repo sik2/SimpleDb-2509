@@ -105,4 +105,33 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public Map<String, Object> selectRow() {
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        try{
+            PreparedStatement ps = simpleDb.getconnection().prepareStatement(query.toString());
+
+            bindParams(ps);
+            ResultSet rs = ps.executeQuery();
+
+            ResultSetMetaData meta = rs.getMetaData();
+            int columCount = meta.getColumnCount();
+
+            Map<String,Object> row = new LinkedHashMap<>();
+
+            while (rs.next())
+            {
+                for(int i=1; i<= columCount; i++)
+                {
+                    row.put(meta.getColumnLabel(i), rs.getObject(i));
+                }
+            }
+
+            return row;
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

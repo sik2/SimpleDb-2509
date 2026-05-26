@@ -72,8 +72,19 @@ public class SimpleDb {
     }
 
     public void startTransaction() {
+        try{
+            getconnection().setAutoCommit(false);
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
     }
 
     public void rollback() {
+        try{
+            getconnection().rollback();
+            getconnection().setAutoCommit(true);
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
     }
 }

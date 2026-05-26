@@ -13,6 +13,8 @@ public class SimpleDb {
     private final String username;
     private final String password;
 
+    private final ThreadLocal<Connection> threadLocalConn = new ThreadLocal<>();
+
     @Setter
     private boolean devMode = false;
 
@@ -23,7 +25,12 @@ public class SimpleDb {
     }
 
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(url, username, password);
+        Connection conn = threadLocalConn.get();
+        if (conn == null || conn.isClosed()) {
+            conn = DriverManager.getConnection(url, username, password);
+            threadLocalConn.set(conn);
+        }
+        return conn;
     }
 
     public void run(String sql, Object... args) {
@@ -70,15 +77,41 @@ public class SimpleDb {
     }
 
     public void close() {
+        try {
+            Connection conn = threadLocalConn.get();
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
+            }
+            threadLocalConn.remove(); // ✅ 스레드별 정리
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void startTransaction() {
+        try {
+            getConnection().setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void rollback() {
+        try {
+            getConnection().rollback();
+            getConnection().setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void commit() {
+        try {
+            getConnection().commit();
+            getConnection().setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean isDevMode() {

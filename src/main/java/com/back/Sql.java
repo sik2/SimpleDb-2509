@@ -201,7 +201,8 @@ public class Sql {
     }
 
     public <T> T selectRow(Class<T> clazz) {
-        return null;
+        List<T> rows = selectRows(clazz);
+        return rows.isEmpty() ? null : rows.get(0);
     }
 
 

@@ -3,6 +3,7 @@ package com.back.simpleDb;
 import com.back.SimpleDb;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class Sql {
@@ -133,5 +134,9 @@ public class Sql {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public LocalDateTime selectDatetime() {
+        return null;
     }
 }

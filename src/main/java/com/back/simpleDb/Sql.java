@@ -23,6 +23,11 @@ public class Sql {
     }
 
     public Sql appendIn(String sql, Object... params) {
+        String placeholders = String.join(", ", java.util.Collections.nCopies(params.length, "?"));
+
+        this.sql += sql.replace("?", placeholders) + " ";
+        this.params.addAll(Arrays.asList(params));
+
         return this;
     }
 

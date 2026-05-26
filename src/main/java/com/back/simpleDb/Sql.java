@@ -56,8 +56,19 @@ public class Sql {
         return rs.getLong(1);
     }
 
+    @SneakyThrows
     public int update() {
-        return 0;
+        Connection connection = simpleDb.getConnection();
+        PreparedStatement ps = connection.prepareStatement(
+                stringBuilder.toString()
+        );
+
+        for (int i=0; i<param.size(); i++) {
+            ps.setObject(i + 1, param.get(i));
+        }
+
+        ps.executeUpdate();
+        return ps.getUpdateCount();
     }
 
     public int delete() {

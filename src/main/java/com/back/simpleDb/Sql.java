@@ -261,7 +261,7 @@ public class Sql {
     public <T> T selectRow(Class<T> article) {
         if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
 
-
-        return null;
+        Map<String ,Object> row = selectRow();
+        return mapToObject(row,article);
     }
 }

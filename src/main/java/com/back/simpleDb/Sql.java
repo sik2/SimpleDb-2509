@@ -137,6 +137,6 @@ public class Sql {
     }
 
     public LocalDateTime selectDatetime() {
-        return null;
+        return LocalDateTime.now();
     }
 }

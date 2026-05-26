@@ -159,6 +159,20 @@ public class Sql {
     }
 
     public String selectString() {
-        return "";
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        try {
+            PreparedStatement ps = simpleDb.getconnection().prepareStatement(query.toString());
+
+            bindParams(ps);
+            ResultSet rs = ps.executeQuery();
+
+            rs.next();
+
+            return rs.getString("title");
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

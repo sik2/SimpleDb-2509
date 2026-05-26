@@ -87,4 +87,7 @@ public class SimpleDb {
             throw new RuntimeException(e);
         }
     }
+
+    public void commit() {
+    }
 }

@@ -202,6 +202,25 @@ public class Sql {
     }
 
     public List<Long> selectLongs() {
-        return null;
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        try{
+            PreparedStatement ps = simpleDb.getconnection().prepareStatement(query.toString());
+
+            bindParams(ps);
+            ResultSet rs = ps.executeQuery();
+
+            List<Long> rows = new ArrayList<>();
+
+            while (rs.next())
+            {
+                rows.add(rs.getLong(1));
+            }
+
+            return rows;
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -187,10 +187,11 @@ public class Sql {
 
             rs.next();
 
-            return rs.getBoolean("isBlind");
+            return rs.getBoolean(1);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
 }

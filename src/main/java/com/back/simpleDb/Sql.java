@@ -200,4 +200,8 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public List<Long> selectLongs() {
+        return null;
+    }
 }

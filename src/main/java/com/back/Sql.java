@@ -155,8 +155,10 @@ public class Sql {
         }
     }
 
-    public Sql appendIn(String sql, Object... args){
-        return null;
+    public Sql appendIn(String sql, Object... args) {
+        String placeholders = String.join(", ", Collections.nCopies(args.length, "?"));
+        String expandedSql = sql.replace("?", placeholders);
+        return append(expandedSql, args);
     }
 
     public <T> List<T> selectRows(Class<T> clazz) {

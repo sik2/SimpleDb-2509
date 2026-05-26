@@ -1,8 +1,9 @@
 package com.back.simpleDb;
 
 import com.back.Article;
+import com.back.SimpleDb;
+import com.back.simpleDb.Sql;
 import org.junit.jupiter.api.*;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;

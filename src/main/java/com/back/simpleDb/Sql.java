@@ -98,5 +98,4 @@ public class Sql {
         sql = "";
         return aBoolean;
     }
-
 }

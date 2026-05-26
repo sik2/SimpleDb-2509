@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -129,6 +128,18 @@ public class SimpleDb {
         return execute(sql, params, stmt -> {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) return null;
+
+                if (cls == Boolean.class) {
+                    Object value = rs.getObject(1);
+
+                    if (value instanceof Boolean bool) {
+                        return cls.cast(bool);
+                    }
+
+                    if (value instanceof Number number) {
+                        return cls.cast(number.intValue() == 1);
+                    }
+                }
 
                 return cls.cast(rs.getObject(1));
             }

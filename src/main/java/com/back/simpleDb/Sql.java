@@ -5,6 +5,11 @@ import java.util.List;
 import java.util.Map;
 
 public class Sql {
+    private final SimpleDb simpleDb;
+
+    public Sql(SimpleDb simpleDb) {
+        this.simpleDb = simpleDb;
+    }
 
     public Sql append(String sql, Object... params) {
         return this;

@@ -89,5 +89,11 @@ public class SimpleDb {
     }
 
     public void commit() {
+        try{
+            getconnection().commit();
+            getconnection().setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.back;
 
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -173,11 +174,35 @@ public class Sql {
     }
 
     public <T> List<T> selectRows(Class<T> clazz) {
-        return null;
+        List<Map<String, Object>> rows = selectRows();
+        return rows.stream()
+                .map(row -> mapToObject(row, clazz))
+                .toList();
+    }
+
+    private <T> T mapToObject(Map<String, Object> row, Class<T> clazz) {
+        try {
+            T obj = clazz.getDeclaredConstructor().newInstance();
+            for (Map.Entry<String, Object> entry : row.entrySet()) {
+                String fieldName = entry.getKey();
+                Object value = entry.getValue();
+                try {
+                    Field field = clazz.getDeclaredField(fieldName);
+                    field.setAccessible(true);
+                    field.set(obj, value);
+                } catch (NoSuchFieldException e) {
+                    // 매핑할 필드 없으면 스킵
+                }
+            }
+            return obj;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public <T> T selectRow(Class<T> clazz) {
         return null;
     }
+
 
 }

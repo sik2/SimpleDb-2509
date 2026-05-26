@@ -1,5 +1,6 @@
 package com.back.simpleDb;
 
+import com.back.Article;
 import com.back.SimpleDb;
 
 import java.sql.*;
@@ -222,5 +223,9 @@ public class Sql {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public <T> List<T> selectRows(Class<?> article) {
+        return null;
     }
 }

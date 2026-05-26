@@ -1,5 +1,11 @@
 package com.back.simpleDb;
 
+import lombok.SneakyThrows;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,8 +36,24 @@ public class Sql {
         return this;
     }
 
+    @SneakyThrows
     public long insert() {
-        return 0;
+        Connection connection = simpleDb.getConnection();
+
+        PreparedStatement ps = connection.prepareStatement(
+                stringBuilder.toString(),
+                Statement.RETURN_GENERATED_KEYS
+        );
+
+        for (int i=0; i<param.size(); i++) {
+            ps.setObject(i + 1, param.get(i));
+        }
+
+        ps.executeUpdate();
+
+        ResultSet rs = ps.getGeneratedKeys();
+        rs.next();
+        return rs.getLong(1);
     }
 
     public int update() {

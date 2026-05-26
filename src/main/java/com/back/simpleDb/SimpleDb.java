@@ -42,4 +42,31 @@ public class SimpleDb {
             throw new RuntimeException("Failed to create connection: " + e.getMessage(), e);
         }
     }
+
+    // 스레드별 독립 Connection 관리
+    private final ThreadLocal<Connection> threadLocalConnection = new ThreadLocal<>();
+
+    public Connection getConnection() {
+        Connection conn = threadLocalConnection.get();
+        try {
+            if (conn == null || conn.isClosed()) {
+                conn = createConnection();
+                threadLocalConnection.set(conn);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get connection", e);
+        }
+        return conn;
+    }
+
+    // 현재 스레드의 Connection만 닫기 (t017에서 각 스레드가 close() 호출)
+    public void close() {
+        Connection conn = threadLocalConnection.get();
+        if (conn != null) {
+            try {
+                if (!conn.isClosed()) conn.close();
+            } catch (SQLException ignored) {}
+            threadLocalConnection.remove();
+        }
+    }
 }

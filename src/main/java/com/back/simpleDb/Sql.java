@@ -36,8 +36,9 @@ public class Sql {
         return this;
     }
 
+    // 개별 인자로 전달받은 sql과 params를 사용하여 PreparedStatement를 생성하는 메서드
     @SneakyThrows
-    public long insert() {
+    private PreparedStatement buildStatement(boolean returnKeys) {
         Connection connection = simpleDb.getConnection();
 
         PreparedStatement ps = connection.prepareStatement(
@@ -49,6 +50,13 @@ public class Sql {
             ps.setObject(i + 1, param.get(i));
         }
 
+        return ps;
+    }
+
+    @SneakyThrows
+    public long insert() {
+        // 생성한 id가 필요하므로 true 입력
+        PreparedStatement ps = buildStatement(true);
         ps.executeUpdate();
 
         ResultSet rs = ps.getGeneratedKeys();
@@ -58,21 +66,12 @@ public class Sql {
 
     @SneakyThrows
     public int update() {
-        Connection connection = simpleDb.getConnection();
-        PreparedStatement ps = connection.prepareStatement(
-                stringBuilder.toString()
-        );
-
-        for (int i=0; i<param.size(); i++) {
-            ps.setObject(i + 1, param.get(i));
-        }
-
-        ps.executeUpdate();
-        return ps.getUpdateCount();
+        return buildStatement(false).executeUpdate();
     }
 
+    @SneakyThrows
     public int delete() {
-        return 0;
+        return buildStatement(false).executeUpdate();
     }
 
     public List<Map<String, Object>> selectRows() {

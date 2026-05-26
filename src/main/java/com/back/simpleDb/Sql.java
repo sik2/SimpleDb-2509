@@ -194,4 +194,6 @@ public class Sql {
         }
     }
 
+    public void appendIn(String query, int i, int i1, int i2) {
+    }
 }

@@ -23,6 +23,13 @@ public class Sql {
         return this;
     }
 
+    public Sql appendIn(String sql, Object... args) {
+        String placeholders = String.join(", ",Collections.nCopies(args.length, "?"));
+        String expandedSql = sql.replace("?", placeholders);
+
+        return append(expandedSql, args);
+    }
+
     public long insert(){
         return (long) submit();
     }
@@ -192,8 +199,5 @@ public class Sql {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void appendIn(String query, int i, int i1, int i2) {
     }
 }

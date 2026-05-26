@@ -177,6 +177,20 @@ public class Sql {
     }
 
     public Boolean selectBoolean() {
-        return true;
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        try {
+            PreparedStatement ps = simpleDb.getconnection().prepareStatement(query.toString());
+
+            bindParams(ps);
+            ResultSet rs = ps.executeQuery();
+
+            rs.next();
+
+            return rs.getBoolean("isBlind");
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

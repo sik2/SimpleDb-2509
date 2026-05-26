@@ -139,4 +139,22 @@ public class Sql {
     public LocalDateTime selectDatetime() {
         return LocalDateTime.now();
     }
+
+    public Long selectLong() {
+        if(devMode) System.out.println("== raw Sql ==\n %s".formatted(query));
+
+        try{
+            PreparedStatement ps = simpleDb.getconnection().prepareStatement(query.toString());
+
+            bindParams(ps);
+            ResultSet rs = ps.executeQuery();
+
+            rs.next();
+
+            return rs.getLong(1);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

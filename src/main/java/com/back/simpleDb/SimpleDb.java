@@ -15,6 +15,10 @@ public class SimpleDb {
         this.log = log;
     }
 
+    public Connection getConnection() {
+        return null;
+    }
+
     public void setDevMode(boolean b) {
     }
 

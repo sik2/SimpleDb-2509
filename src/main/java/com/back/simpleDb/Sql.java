@@ -3,6 +3,7 @@ package com.back.simpleDb;
 import lombok.RequiredArgsConstructor;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,12 +29,14 @@ public class Sql {
         return this;
     }
 
+    //params 리스트에 있는 값들을 SQL의 플레이스홀더(?)에 순서대로 바인딩 -> 바인딩 완료된 PreparedStatement 반환
     private PreparedStatement buildPreparedStatement(PreparedStatement ps) throws SQLException {
         for (int i = 0; i < params.size(); i++) {
             ps.setObject(i + 1, params.get(i));
         }
         return ps;
     }
+
 
     private void printLog(String sql) {
         if (simpleDb.isDevMode()) {
@@ -43,7 +46,8 @@ public class Sql {
         }
     }
 
-    public long insert() {  // 생성된 Auto Increment PK 반환
+    // 생성된 Auto Increment PK 반환
+    public long insert() {
         String sql = sqlBuilder.toString().trim();
 
         printLog(sql);
@@ -80,8 +84,13 @@ public class Sql {
         }
     }
 
-    public int update() { return executeUpdate(); }
-    public int delete() { return executeUpdate(); }
+    public int update() {
+        return executeUpdate();
+    }
+
+    public int delete() {
+        return executeUpdate();
+    }
 
     // 타입 변환 : DATETIME → LocalDateTime, BIT(1) → Boolean
     private Object convertValue(Object value) {
@@ -132,8 +141,85 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
     public Map<String, Object> selectRow() {
         List<Map<String, Object>> rows = selectRows();
         return rows.isEmpty() ? null : rows.get(0);
     }
+
+//    public LocalDateTime selectDatetime() {
+//        String sql = sqlBuilder.toString().trim();
+//        printLog(sql);
+//
+//        try (PreparedStatement ps = buildPreparedStatement(
+//                simpleDb.getConnection().prepareStatement(sql));
+//
+//             ResultSet rs = ps.executeQuery()) {
+//            if (rs.next()) {
+//                return rs.getTimestamp(1).toLocalDateTime();
+//            }
+//
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//        return null;
+//    }
+//
+//    public Long selectLong() {
+//        String sql = sqlBuilder.toString().trim();
+//        printLog(sql);
+//
+//        try (PreparedStatement ps = buildPreparedStatement(
+//                simpleDb.getConnection().prepareStatement(sql));
+//             ResultSet rs = ps.executeQuery();
+//        ) {
+//            if (rs.next()) {
+//                return rs.getLong(1);
+//            }
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//        return null;
+//    }
+
+
+    private <T> T selectSingle(SqlResultMapper<T> mapper){
+        String sql = sqlBuilder.toString().trim();
+        printLog(sql);
+
+        try (PreparedStatement ps = buildPreparedStatement(
+                simpleDb.getConnection().prepareStatement(sql));
+             ResultSet rs = ps.executeQuery();
+        ) {
+            if (rs.next()) {
+                return mapper.map(rs);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+
+    }
+
+    @FunctionalInterface
+    interface SqlResultMapper<T> {
+        T map(ResultSet rs) throws SQLException;
+    }
+
+    public Long selectLong() {
+        return selectSingle(rs -> rs.getLong(1));
+    }
+
+    public String selectString() {
+        return selectSingle(rs -> rs.getString(1));
+    }
+
+    public Boolean selectBoolean() {
+        return selectSingle(rs -> rs.getBoolean(1));
+    }
+
+    public LocalDateTime selectDatetime() {
+        return selectSingle(rs -> rs.getTimestamp(1).toLocalDateTime());
+    }
+
 }

@@ -79,4 +79,24 @@ public class Sql {
 
         }
     }
+
+    public Map<String, Object> selectRow() {
+        try (PreparedStatement ps = connection.prepareStatement(query.toString())){
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            var rs = ps.executeQuery();
+            var meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+            Map<String, Object> row = new java.util.HashMap<>();
+            while (rs.next()) {
+                for (int i = 1; i <= columnCount; i++) {
+                    row.put(meta.getColumnLabel(i), rs.getObject(i));
+                }
+            }
+            return row;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

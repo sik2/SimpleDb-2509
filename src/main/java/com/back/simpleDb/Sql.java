@@ -128,7 +128,13 @@ public class Sql {
             return null;
         } catch (SQLException e) { throw new RuntimeException("selectString 실패", e); }
     }
-    public Boolean selectBoolean() { throw new UnsupportedOperationException("Not implemented yet"); }
+    public Boolean selectBoolean() {
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement ps = prepare(conn); ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) return rs.getBoolean(1);
+            return null;
+        } catch (SQLException e) { throw new RuntimeException("selectBoolean 실패", e); }
+    }
     public Sql appendIn(String sql, Object... values) { throw new UnsupportedOperationException("Not implemented yet"); }
     public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException("Not implemented yet"); }
     public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException("Not implemented yet"); }

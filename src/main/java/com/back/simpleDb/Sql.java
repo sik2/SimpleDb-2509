@@ -73,8 +73,42 @@ public class Sql {
         }
         return rows.get(0);
     }
-    public LocalDateTime selectDatetime() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
-    public Long selectLong() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    public LocalDateTime selectDatetime() {
+        String sql = sqlBuilder.toString();
+        try (var conn = simpleDb.getConnection();
+             var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    var timestamp = rs.getTimestamp(1);
+                    return timestamp == null ? null : timestamp.toLocalDateTime();
+                }
+            }
+            throw new RuntimeException("날짜 조회 결과가 없습니다.");
+        } catch (Exception e) {
+            throw new RuntimeException("날짜 조회 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    public Long selectLong() {
+        String sql = sqlBuilder.toString();
+        try (var conn = simpleDb.getConnection();
+             var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                Object value = rs.getObject(1);
+                if (value == null) {
+                    return null;
+                }
+                return ((Number) value).longValue();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("LONG 조회 중 오류가 발생했습니다.", e);
+        }
+    }
     public String selectString() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public Boolean selectBoolean() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public List<Long> selectLongs() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }

@@ -78,28 +78,28 @@ public class SimpleDbTest {
         simpleDb.run("SELECT * FROM article");
     }
 
-//    @Test
-//    @DisplayName("insert")
-//    public void t001() {
-//        Sql sql = simpleDb.genSql();
-//        /*
-//        == rawSql ==
-//        INSERT INTO article
-//        SET createdDate = NOW() ,
-//        modifiedDate = NOW() ,
-//        title = '제목 new' ,
-//        body = '내용 new'
-//        */
-//        sql.append("INSERT INTO article")
-//                .append("SET createdDate = NOW()")
-//                .append(", modifiedDate = NOW()")
-//                .append(", title = ?", "제목 new")
-//                .append(", body = ?", "내용 new");
-//
-//        long newId = sql.insert(); // AUTO_INCREMENT 에 의해서 생성된 주키 리턴
-//
-//        assertThat(newId).isGreaterThan(0);
-//    }
+    @Test
+    @DisplayName("insert")
+    public void t001() {
+        Sql sql = simpleDb.genSql();
+        /*
+        == rawSql ==
+        INSERT INTO article
+        SET createdDate = NOW() ,
+        modifiedDate = NOW() ,
+        title = '제목 new' ,
+        body = '내용 new'
+        */
+        sql.append("INSERT INTO article")
+                .append("SET createdDate = NOW()")
+                .append(", modifiedDate = NOW()")
+                .append(", title = ?", "제목 new")
+                .append(", body = ?", "내용 new");
+
+        long newId = sql.insert(); // AUTO_INCREMENT 에 의해서 생성된 주키 리턴
+
+        assertThat(newId).isGreaterThan(0);
+    }
 //
 //    @Test
 //    @DisplayName("update")

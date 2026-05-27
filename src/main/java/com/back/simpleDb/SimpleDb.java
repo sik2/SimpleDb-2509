@@ -39,4 +39,12 @@ public class SimpleDb {
             throw new RuntimeException(e);
         }
     }
+
+    public Sql genSql() {
+        try{
+            return new Sql(getConnection());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

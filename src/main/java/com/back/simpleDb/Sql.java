@@ -27,11 +27,15 @@ public class Sql {
         return this;
     }
 
+    private void setParam(PreparedStatement ps) throws SQLException {
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+    }
+
     public long insert() {
         try (PreparedStatement ps = connection.prepareStatement(query.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            setParam(ps);
             ps.execute();
             var rs = ps.getGeneratedKeys();
             if (rs.next()) {
@@ -40,14 +44,12 @@ public class Sql {
         } catch(SQLException e) {
             throw new RuntimeException(e);
         }
-        throw new RuntimeException("키가 생성되지 않았습니다.");
+        throw new RuntimeException("삽입되지 않았습니다.");
     }
 
     public int update() {
         try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            setParam(ps);
             return ps.executeUpdate();
         } catch(SQLException e) {
             throw new RuntimeException(e);
@@ -60,9 +62,7 @@ public class Sql {
 
     public List<Map<String, Object>> selectRows() {
         try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            setParam(ps);
             var rs = ps.executeQuery();
             var meta = rs.getMetaData();
             int columnCount = meta.getColumnCount();
@@ -83,9 +83,7 @@ public class Sql {
 
     public Map<String, Object> selectRow() {
         try (PreparedStatement ps = connection.prepareStatement(query.toString())){
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            setParam(ps);
             var rs = ps.executeQuery();
             var meta = rs.getMetaData();
             int columnCount = meta.getColumnCount();
@@ -103,16 +101,27 @@ public class Sql {
 
     public LocalDateTime selectDatetime() {
         try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            setParam(ps);
             var rs = ps.executeQuery();
             if (rs.next()) {
                 return rs.getTimestamp(1).toLocalDateTime();
             }
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         throw new RuntimeException("날짜가 조회되지 않았습니다.");
+    }
+
+    public Long selectLong() {
+        try (PreparedStatement ps  = connection.prepareStatement(query.toString())) {
+            setParam(ps);
+            var rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new RuntimeException("id가 조회되지 않았습니다.");
     }
 }

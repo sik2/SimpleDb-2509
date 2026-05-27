@@ -1,5 +1,7 @@
 package com.back.simpleDb;
 
+import com.back.Article;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -165,6 +167,27 @@ public class Sql {
                 result.add(rs.getLong(1));
             }
             return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<Article> selectRows(Class<Article> articleClass) {
+        try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
+            setParam(ps);
+            var rs = ps.executeQuery();
+            List<Article> articleList = new ArrayList<>();
+            while (rs.next()) {
+                Article article = new Article();
+                article.setId(rs.getLong("id"));
+                article.setTitle(rs.getString("title"));
+                article.setBody(rs.getString("body"));
+                article.setCreatedDate(rs.getTimestamp("createdDate").toLocalDateTime());
+                article.setModifiedDate(rs.getTimestamp("modifiedDate").toLocalDateTime());
+                article.setBlind(rs.getBoolean("isBlind"));
+                articleList.add(article);
+            }
+            return articleList;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

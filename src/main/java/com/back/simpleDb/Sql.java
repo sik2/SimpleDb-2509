@@ -87,7 +87,7 @@ public class Sql {
             ResultSetMetaData metaData = rs.getMetaData();
 
             //조회 결과의 컬럼 개수 가져옴
-            int columCount = metaData.getColumnCount();
+            int columnCount = metaData.getColumnCount();
             //최종 결과 담을 리스트 만듬
             List<Map<String, Object>> rows = new ArrayList<>();
 
@@ -95,12 +95,12 @@ public class Sql {
                 //LinkedHashMap은 입력한 순서대로 key, value를 보관하는 Map
                 Map<String, Object> row = new LinkedHashMap<>();
 
-                for (int i = 1; i <= columCount; i++) {
-                    String ColumName = metaData.getColumnLabel(i);
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = metaData.getColumnLabel(i);
                     //컬럼마다 타입 다름
                     Object value = rs.getObject(i);
 
-                    row.put(ColumName, value);
+                    row.put(columnName, value);
                 }
                 rows.add(row);
             }
@@ -114,8 +114,18 @@ public class Sql {
         return null;
     }
 
+    /*
+    * selectRows()는 MySQL이 찾아서 반환한 ResultSet을 컬럼명과 컬럼값으로 묶어서
+    * List<Map<String, Object>>로 바꿔준다.
+    * selectRow()는 그 결과 리스트에서 첫 번째 row만 꺼내서 반환한다.
+    */
     public Map<String, Object> selectRow() {
-        return null;
+        List<Map<String, Object>> rows = selectRows();
+
+        if(rows.isEmpty()) {
+            return null;
+        }
+        return rows.get(0);
     }
 
     public <T> T selectRow(Class<T> clazz) {

@@ -21,7 +21,7 @@ public class Sql {
 
     public Sql append(String sql, Object... params) {
         sqlBuilder.append(sql).append(" ");
-        for(int i = 0; i < params.length; i++) {
+        for (int i = 0; i < params.length; i++) {
             Object param = params[i];
             this.params.add(param);
         }
@@ -33,24 +33,31 @@ public class Sql {
     }
 
     public long insert() {
-        try(PreparedStatement ps = simpleDb.getConnection()
+        try (PreparedStatement ps = simpleDb.getConnection()
                 .prepareStatement(sqlBuilder.toString(), Statement.RETURN_GENERATED_KEYS)) {
-        for(int i = 0 ; i < params.size(); i++) {
+            for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
             ps.executeUpdate();
             ResultSet rs = ps.getGeneratedKeys();
-            if(rs.next()) {
+            if (rs.next()) {
                 return rs.getLong(1);
             }
             return 0;
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     public int update() {
-        return 0;
+        try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            return ps.executeUpdate();
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public int delete() {

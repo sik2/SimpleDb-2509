@@ -47,4 +47,12 @@ public class SimpleDb {
             throw new RuntimeException(e);
         }
     }
+
+    public void close() {
+        try {
+            getConnection().close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

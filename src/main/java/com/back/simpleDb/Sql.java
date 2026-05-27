@@ -109,7 +109,21 @@ public class Sql {
             throw new RuntimeException("LONG 조회 중 오류가 발생했습니다.", e);
         }
     }
-    public String selectString() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    public String selectString() {
+        String sql = sqlBuilder.toString();
+        try (var conn = simpleDb.getConnection();
+             var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+            throw new RuntimeException("문자열이 조회되지 않았습니다.");
+        } catch (Exception e) {
+            throw new RuntimeException("문자열 조회 중 오류가 발생했습니다.", e);
+        }
+    }
     public Boolean selectBoolean() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public List<Long> selectLongs() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }

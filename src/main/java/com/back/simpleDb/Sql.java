@@ -192,4 +192,24 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public Article selectRow(Class<Article> articleClass) {
+        try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
+            setParam(ps);
+            var rs = ps.executeQuery();
+            if (rs.next()) {
+                Article article = new Article();
+                article.setId(rs.getLong("id"));
+                article.setTitle(rs.getString("title"));
+                article.setBody(rs.getString("body"));
+                article.setCreatedDate(rs.getTimestamp("createdDate").toLocalDateTime());
+                article.setModifiedDate(rs.getTimestamp("modifiedDate").toLocalDateTime());
+                article.setBlind(rs.getBoolean("isBlind"));
+                return article;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new RuntimeException("Article 객체가 조회되지 않았습니다.");
+    }
 }

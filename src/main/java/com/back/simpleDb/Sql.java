@@ -55,13 +55,25 @@ public class Sql {
                 ps.setObject(i + 1, params.get(i));
             }
             return ps.executeUpdate();
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    /*
+     * java 로직은 sql 문자열과 파라미터를 DB에 전달하고 실행 결과를 받는 역할
+     * update인지 delete인지 문법을 해석하고 실제로 테이블을 바꾸는 일은 MySql이 한다
+     */
+
     public int delete() {
-        return 0;
+        try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<Map<String, Object>> selectRows() {

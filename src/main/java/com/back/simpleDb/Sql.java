@@ -2,6 +2,7 @@ package com.back.simpleDb;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,11 @@ public class Sql {
         }
     }
 
-    public Sql appendIn(String sqlPart, Object... args) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    public Sql appendIn(String sqlPart, Object... args) {
+        String expanded = sqlPart.replace("?", String.join(",", Collections.nCopies(args.length, "?")));
+        return append(expanded, args);
+    }
+
     public int update() { return executeUpdateLike("UPDATE"); }
     public int delete() { return executeUpdateLike("DELETE"); }
     public List<Map<String, Object>> selectRows() {

@@ -68,7 +68,14 @@ public class Sql {
         }
     }
 
-    public int update() { throw new UnsupportedOperationException("Not implemented yet"); }
+    public int update() {
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement ps = prepare(conn)) {
+            return ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("UPDATE 실패: " + e.getMessage(), e);
+        }
+    }
     public int delete() { throw new UnsupportedOperationException("Not implemented yet"); }
     public List<Map<String, Object>> selectRows() { throw new UnsupportedOperationException("Not implemented yet"); }
     public Map<String, Object> selectRow() { throw new UnsupportedOperationException("Not implemented yet"); }

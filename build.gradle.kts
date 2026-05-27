@@ -30,8 +30,8 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.38")
 
     // JUnit 5: 테스트 프레임워크
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // MySQL JDBC 드라이버: Java가 MySQL과 대화하기 위해 반드시 필요
     implementation("com.mysql:mysql-connector-j:9.3.0")

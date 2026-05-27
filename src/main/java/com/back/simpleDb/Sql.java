@@ -27,6 +27,11 @@ public class Sql {
         return this;
     }
 
+    public Sql appendIn(String sql, Object... args) {
+        String expanded = sql.replace("?", String.join(",", Collections.nCopies(args.length, "?")));
+        return append(expanded, args);
+    }
+
     private void setParam(PreparedStatement ps) throws SQLException {
         for (int i = 0; i < params.size(); i++) {
             ps.setObject(i + 1, params.get(i));

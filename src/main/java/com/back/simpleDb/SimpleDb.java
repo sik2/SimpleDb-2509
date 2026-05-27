@@ -12,6 +12,8 @@ public class SimpleDb {
     @Setter
     private boolean devMode = false;
 
+    private final ThreadLocal<Connection> connection = new ThreadLocal<>();
+
     public SimpleDb(String host, String user, String password, String dbName) {
         this.host = host;
         this.user = user;
@@ -20,16 +22,17 @@ public class SimpleDb {
     }
 
     private Connection getConnection() throws SQLException {
-        String url = "jdbc:mysql://" + host + "/" + dbName + "?useSSL=false&allowPublicKeyRetrieval=true";
-        return DriverManager.getConnection(url, user, password);
+        if (connection.get() == null) {
+            String url = "jdbc:mysql://" + host + "/" + dbName + "?useSSL=false&allowPublicKeyRetrieval=true";
+            connection.set(DriverManager.getConnection(url, user, password));
+        }
+        return connection.get();
     }
 
     public void run(String query, Object... params) {
         if (devMode) System.out.println("[SQL] " + query);
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
-
+        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
             for (int i = 0; i < params.length; i++) {
                 ps.setObject(i + 1, params[i]);
             }
@@ -50,7 +53,28 @@ public class SimpleDb {
 
     public void close() {
         try {
-            getConnection().close();
+            if (connection.get() != null) {
+                connection.get().close();
+                connection.remove(); // 스레드 로컬에서 제거
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void startTransaction() {
+        try {
+            getConnection().setAutoCommit(false);
+            getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void rollback() {
+        try {
+            getConnection().rollback();
+            getConnection().setAutoCommit(true);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

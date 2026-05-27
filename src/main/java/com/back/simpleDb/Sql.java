@@ -12,6 +12,7 @@ public class Sql {
     private final Connection connection;
     private final StringBuilder query;
     private final List<Object> params;
+
     public Sql(Connection connection) {
         this.connection = connection;
         this.query = new StringBuilder();
@@ -38,5 +39,16 @@ public class Sql {
             throw new RuntimeException(e);
         }
         throw new RuntimeException("키가 생성되지 않았습니다.");
+    }
+
+    public int update() {
+        try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            return ps.executeUpdate();
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

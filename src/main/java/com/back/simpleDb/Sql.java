@@ -76,7 +76,7 @@ public class Sql {
             throw new RuntimeException("UPDATE 실패: " + e.getMessage(), e);
         }
     }
-    public int delete() { throw new UnsupportedOperationException("Not implemented yet"); }
+    public int delete() { return update(); }
     public List<Map<String, Object>> selectRows() { throw new UnsupportedOperationException("Not implemented yet"); }
     public Map<String, Object> selectRow() { throw new UnsupportedOperationException("Not implemented yet"); }
     public Long selectLong() { throw new UnsupportedOperationException("Not implemented yet"); }

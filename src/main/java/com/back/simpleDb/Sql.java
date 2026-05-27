@@ -51,4 +51,8 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public int delete() {
+        return update();
+    }
 }

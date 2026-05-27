@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -89,7 +90,7 @@ public class Sql {
             var meta = rs.getMetaData();
             int columnCount = meta.getColumnCount();
             Map<String, Object> row = new java.util.HashMap<>();
-            while (rs.next()) {
+            if (rs.next()) {
                 for (int i = 1; i <= columnCount; i++) {
                     row.put(meta.getColumnLabel(i), rs.getObject(i));
                 }
@@ -98,5 +99,20 @@ public class Sql {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public LocalDateTime selectDatetime() {
+        try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            var rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getTimestamp(1).toLocalDateTime();
+            }
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new RuntimeException("날짜가 조회되지 않았습니다.");
     }
 }

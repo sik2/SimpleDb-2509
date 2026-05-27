@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class Sql {
     private final Connection connection;
@@ -54,5 +55,28 @@ public class Sql {
 
     public int delete() {
         return update();
+    }
+
+    public List<Map<String, Object>> selectRows() {
+        try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            var rs = ps.executeQuery();
+            var meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+            List<Map<String, Object>> rows = new ArrayList<>();
+            while (rs.next()) {
+                Map<String, Object> row = new java.util.HashMap<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    row.put(meta.getColumnLabel(i), rs.getObject(i));
+                }
+                rows.add(row);
+            }
+            return rows;
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+
+        }
     }
 }

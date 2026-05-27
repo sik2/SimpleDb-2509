@@ -124,7 +124,21 @@ public class Sql {
             throw new RuntimeException("문자열 조회 중 오류가 발생했습니다.", e);
         }
     }
-    public Boolean selectBoolean() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    public Boolean selectBoolean() {
+        String sql = sqlBuilder.toString();
+        try (var conn = simpleDb.getConnection();
+             var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBoolean(1);
+                }
+            }
+            throw new RuntimeException("boolean 값이 조회되지 않았습니다.");
+        } catch (Exception e) {
+            throw new RuntimeException("boolean 조회 중 오류가 발생했습니다.", e);
+        }
+    }
     public List<Long> selectLongs() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }

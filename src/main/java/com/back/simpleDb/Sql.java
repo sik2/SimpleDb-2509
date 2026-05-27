@@ -49,7 +49,12 @@ public class Sql {
         }
     }
 
-    public int update() {
+    /*
+     * java 로직은 sql 문자열과 파라미터를 DB에 전달하고 실행 결과를 받는 역할
+     * update인지 delete인지 문법을 해석하고 실제로 테이블을 바꾸는 일은 MySql이 한다
+     */
+
+    private int executeUpdate(){
         try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
@@ -60,20 +65,12 @@ public class Sql {
         }
     }
 
-    /*
-     * java 로직은 sql 문자열과 파라미터를 DB에 전달하고 실행 결과를 받는 역할
-     * update인지 delete인지 문법을 해석하고 실제로 테이블을 바꾸는 일은 MySql이 한다
-     */
+    public int update() {
+        return executeUpdate();
+    }
 
     public int delete() {
-        try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            return ps.executeUpdate();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return executeUpdate();
     }
 
     public List<Map<String, Object>> selectRows() {

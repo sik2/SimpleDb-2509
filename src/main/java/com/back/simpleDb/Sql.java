@@ -2,9 +2,11 @@ package com.back.simpleDb;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +34,7 @@ public class Sql {
         return this;
     }
 
+    // i + 1은 java의 인덱스는 0번부 시작
     public long insert() {
         try (PreparedStatement ps = simpleDb.getConnection()
                 .prepareStatement(sqlBuilder.toString(), Statement.RETURN_GENERATED_KEYS)) {
@@ -54,7 +57,7 @@ public class Sql {
      * update인지 delete인지 문법을 해석하고 실제로 테이블을 바꾸는 일은 MySql이 한다
      */
 
-    private int executeUpdate(){
+    private int executeUpdate() {
         try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
@@ -74,7 +77,37 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-        return null;
+        try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            //select 조회문 사용
+            ResultSet rs = ps.executeQuery();
+            //조회 컬럼 정보 가져옴
+            ResultSetMetaData metaData = rs.getMetaData();
+
+            //조회 결과의 컬럼 개수 가져옴
+            int columCount = metaData.getColumnCount();
+            //최종 결과 담을 리스트 만듬
+            List<Map<String, Object>> rows = new ArrayList<>();
+
+            while (rs.next()) {
+                //LinkedHashMap은 입력한 순서대로 key, value를 보관하는 Map
+                Map<String, Object> row = new LinkedHashMap<>();
+
+                for (int i = 1; i <= columCount; i++) {
+                    String ColumName = metaData.getColumnLabel(i);
+                    //컬럼마다 타입 다름
+                    Object value = rs.getObject(i);
+
+                    row.put(ColumName, value);
+                }
+                rows.add(row);
+            }
+            return rows;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public <T> List<T> selectRows(Class<T> clazz) {

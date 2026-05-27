@@ -1,8 +1,6 @@
 package com.back.simpleDb;
 
 
-import lombok.Getter;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -34,6 +32,12 @@ public class SimpleDb {
                 conn = DriverManager.getConnection(
                         "jdbc:mysql://" + host + "/" + database, user, password
                 );
+
+                //SQL 실행 전에 타임존 설정
+                try (PreparedStatement ps = conn.prepareStatement("SET time_zone = '+09:00'")) {
+                    ps.execute();
+                }
+
                 myConn.set(conn);
             }
         } catch (SQLException e) {

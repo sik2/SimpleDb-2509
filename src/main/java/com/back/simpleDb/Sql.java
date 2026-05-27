@@ -133,7 +133,15 @@ public class Sql {
     }
 
     public LocalDateTime selectDatetime() {
-        return null;
+        Map<String, Object> row = selectRow();
+
+        if(row == null) {
+            return null;
+        }
+
+        Object value = row.values().iterator().next();
+
+        return (LocalDateTime) value;
     }
 
     public Long selectLong() {

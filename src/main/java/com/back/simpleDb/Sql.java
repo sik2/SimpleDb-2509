@@ -155,4 +155,18 @@ public class Sql {
         }
         throw new RuntimeException("boolean 값이 조회되지 않았습니다.");
     }
+
+    public List<Long> selectLongs() {
+        try (PreparedStatement ps = connection.prepareStatement(query.toString())) {
+            setParam(ps);
+            var rs = ps.executeQuery();
+            List<Long> result = new ArrayList<>();
+            while (rs.next()) {
+                result.add(rs.getLong(1));
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

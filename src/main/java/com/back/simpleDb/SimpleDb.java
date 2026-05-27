@@ -27,7 +27,7 @@ public class SimpleDb {
         this.devMode = devMode;
     }
 
-    private Connection getConnection() {
+    Connection getConnection() {
         Connection conn = myConn.get();
         try {
             if (conn == null || conn.isClosed()) {
@@ -54,7 +54,7 @@ public class SimpleDb {
     }
 
     public Sql genSql() {
-        return new Sql();
+        return new Sql(this);
     }
 
     public void startTransaction() {

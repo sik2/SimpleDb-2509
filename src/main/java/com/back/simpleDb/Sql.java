@@ -159,7 +159,12 @@ public class Sql {
         return rs.getObject(1, String.class);
     }
 
+    @SneakyThrows
     public Boolean selectBoolean() {
-        return null;
+        PreparedStatement ps = buildStatement(false);
+        ResultSet rs = ps.executeQuery();
+        rs.next();
+
+        return rs.getObject(1, Boolean.class);
     }
 }

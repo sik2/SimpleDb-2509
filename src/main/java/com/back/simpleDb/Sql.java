@@ -124,4 +124,17 @@ public class Sql {
         }
         throw new RuntimeException("id가 조회되지 않았습니다.");
     }
+
+    public String selectString() {
+        try (PreparedStatement ps  = connection.prepareStatement(query.toString())) {
+            setParam(ps);
+            var rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new RuntimeException("id가 조회되지 않았습니다.");
+    }
 }

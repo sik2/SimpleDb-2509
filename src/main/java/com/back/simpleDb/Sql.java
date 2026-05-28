@@ -4,6 +4,10 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.LinkedHashMap;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class Sql {
 
@@ -191,6 +195,26 @@ public class Sql {
         Collections.addAll(params, values);
         return this;
     }
-    public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException(); }
-    public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException(); }
+    private static final ObjectMapper objectMapper;
+
+    static {
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    public <T> T selectRow(Class<T> clazz) {
+        List<T> rows = selectRows(clazz);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    public <T> List<T> selectRows(Class<T> clazz) {
+        List<Map<String, Object>> rows = selectRows();
+        List<T> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            result.add(objectMapper.convertValue(row, clazz));
+        }
+        return result;
+    }
 }

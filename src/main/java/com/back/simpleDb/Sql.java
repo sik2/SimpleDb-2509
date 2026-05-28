@@ -143,7 +143,19 @@ public class Sql {
         return null;
     }
     public List<Long> selectLongs() { throw new UnsupportedOperationException(); }
-    public String selectString() { throw new UnsupportedOperationException(); }
+    public String selectString() {
+        String sql = buildSql();
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            bindParams(pstmt, params);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getString(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("selectString failed: " + e.getMessage(), e);
+        }
+        return null;
+    }
     public Boolean selectBoolean() { throw new UnsupportedOperationException(); }
     public Sql appendIn(String sql, Object... values) { throw new UnsupportedOperationException(); }
     public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException(); }

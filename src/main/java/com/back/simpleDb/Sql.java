@@ -3,6 +3,7 @@ package com.back.simpleDb;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.LinkedHashMap;
 
 public class Sql {
 
@@ -66,7 +67,45 @@ public class Sql {
             throw new RuntimeException("DELETE failed: " + e.getMessage(), e);
         }
     }
-    public List<Map<String, Object>> selectRows() { throw new UnsupportedOperationException(); }
+    public List<Map<String, Object>> selectRows() {
+        String sql = buildSql();
+        List<Map<String, Object>> result = new ArrayList<>();
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            bindParams(pstmt, params);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                ResultSetMetaData meta = rs.getMetaData();
+                int columnCount = meta.getColumnCount();
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    for (int i = 1; i <= columnCount; i++) {
+                        row.put(meta.getColumnLabel(i), extractValue(rs, i, meta));
+                    }
+                    result.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("selectRows failed: " + e.getMessage(), e);
+        }
+        return result;
+    }
+
+    private Object extractValue(ResultSet rs, int index, ResultSetMetaData meta) throws SQLException {
+        int sqlType = meta.getColumnType(index);
+        return switch (sqlType) {
+            case Types.TIMESTAMP -> {
+                Timestamp ts = rs.getTimestamp(index);
+                yield ts != null ? ts.toLocalDateTime() : null;
+            }
+            case Types.BIT -> rs.getBoolean(index);
+            case Types.INTEGER -> {
+                if (!meta.isSigned(index)) yield rs.getLong(index);
+                yield rs.getInt(index);
+            }
+            case Types.BIGINT -> rs.getLong(index);
+            default -> rs.getObject(index);
+        };
+    }
     public Map<String, Object> selectRow() { throw new UnsupportedOperationException(); }
     public LocalDateTime selectDatetime() { throw new UnsupportedOperationException(); }
     public Long selectLong() { throw new UnsupportedOperationException(); }

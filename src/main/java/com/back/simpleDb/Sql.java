@@ -126,7 +126,22 @@ public class Sql {
         }
         return null;
     }
-    public Long selectLong() { throw new UnsupportedOperationException(); }
+    public Long selectLong() {
+        String sql = buildSql();
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            bindParams(pstmt, params);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    long val = rs.getLong(1);
+                    return rs.wasNull() ? null : val;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("selectLong failed: " + e.getMessage(), e);
+        }
+        return null;
+    }
     public List<Long> selectLongs() { throw new UnsupportedOperationException(); }
     public String selectString() { throw new UnsupportedOperationException(); }
     public Boolean selectBoolean() { throw new UnsupportedOperationException(); }

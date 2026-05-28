@@ -1,7 +1,6 @@
 package com.back.simpleDb;
 
-import com.back.domain.Article;
-
+import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -19,26 +18,41 @@ public class Sql {
     //누적해놓고 바인딩할 값 순서대로 보관
     private final List<Object> params = new ArrayList<>();
 
+    //첫 번째 오는 값을 집어넣기
+    private Object getFirstValue(Map<String, Object> row) {
+        return row.values().iterator().next();
+    }
+
+    private void bindParams(PreparedStatement ps) throws Exception {
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+    }
+
     public Sql(SimpleDb simpleDb) {
         this.simpleDb = simpleDb;
     }
 
     public Sql append(String sql, Object... params) {
         sqlBuilder.append(sql).append(" ");
+
         for (int i = 0; i < params.length; i++) {
             Object param = params[i];
             this.params.add(param);
         }
+
         return this;
     }
 
     public Sql appendIn(String sql, Object... params) {
         String questionMarks = "?";
+
         //파라미터 개수만큼 "?" 늘리기
         for (int i = 1; i < params.length; i++) {
             //문자열 뒤에 ", ?" 붙이기
             questionMarks += ", ?";
         }
+
         //기존 SQL 안의 "?"를 questionMarks로 바꿔주기
         //"WHERE id IN (?)" -> "WHERE id IN (?, ?, ?)"
         sql = sql.replace("?", questionMarks);
@@ -57,15 +71,17 @@ public class Sql {
     public long insert() {
         try (PreparedStatement ps = simpleDb.getConnection()
                 .prepareStatement(sqlBuilder.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            bindParams(ps);
+
             ps.executeUpdate();
+
             ResultSet rs = ps.getGeneratedKeys();
+
             if (rs.next()) {
                 return rs.getLong(1);
             }
             return 0;
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -75,13 +91,11 @@ public class Sql {
      * java 로직은 sql 문자열과 파라미터를 DB에 전달하고 실행 결과를 받는 역할
      * update인지 delete인지 문법을 해석하고 실제로 테이블을 바꾸는 일은 MySql이 한다
      */
-
     private int executeUpdate() {
         try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            bindParams(ps);
             return ps.executeUpdate();
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -97,9 +111,7 @@ public class Sql {
 
     public List<Map<String, Object>> selectRows() {
         try (PreparedStatement ps = simpleDb.getConnection().prepareStatement(sqlBuilder.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+            bindParams(ps);
             //select 조회문 사용
             ResultSet rs = ps.executeQuery();
             //조회 컬럼 정보 가져옴
@@ -124,6 +136,7 @@ public class Sql {
                 rows.add(row);
             }
             return rows;
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -133,22 +146,14 @@ public class Sql {
     selectRows()로 가져온 결과를 List<Map<String, Object>>로 가져온다.*/
     public <T> List<T> selectRows(Class<T> clazz) {
         List<Map<String, Object>> rows = selectRows();
-        List<Article> articles = new ArrayList<>();
+        List<T> objects = new ArrayList<>();
 
         for(int i = 0 ; i < rows.size(); i++) {
             Map<String, Object> row = rows.get(i);
-            Article article = new Article();
-
-            article.setId((Long) row.get("id"));
-            article.setTitle((String) row.get("title"));
-            article.setBody((String) row.get("body"));
-            article.setCreatedDate((LocalDateTime) row.get("createdDate"));
-            article.setModifiedDate((LocalDateTime) row.get("modifiedDate"));
-            article.setBlind((Boolean) row.get("isBlind"));
-
-            articles.add(article);
+            T obj = mapToObject(row, clazz);
+            objects.add(obj);
         }
-        return (List<T>) articles;
+        return objects;
     }
 
     /*
@@ -166,23 +171,13 @@ public class Sql {
     }
 
     public <T> T selectRow(Class<T> clazz) {
-        List<Map<String, Object>> rows = selectRows();
-        Article article = new Article();
+        Map<String, Object> row = selectRow();
 
-        if (rows.isEmpty()) {
+        if(row == null){
             return null;
         }
 
-        Map<String, Object> row = rows.get(0);
-
-        article.setId((Long) row.get("id"));
-        article.setTitle((String) row.get("title"));
-        article.setBody((String) row.get("body"));
-        article.setCreatedDate((LocalDateTime) row.get("createdDate"));
-        article.setModifiedDate((LocalDateTime) row.get("modifiedDate"));
-        article.setBlind((Boolean) row.get("isBlind"));
-
-        return (T) article;
+        return mapToObject(row, clazz);
     }
 
     public LocalDateTime selectDatetime() {
@@ -192,9 +187,7 @@ public class Sql {
             return null;
         }
 
-        Object value = row.values().iterator().next();
-
-        return (LocalDateTime) value;
+        return (LocalDateTime) getFirstValue(row);
     }
 
     public Long selectLong() {
@@ -204,9 +197,7 @@ public class Sql {
             return null;
         }
 
-        Object value = row.values().iterator().next();
-
-        return (Long) value;
+        return (Long) getFirstValue(row);
     }
 
     public String selectString() {
@@ -216,9 +207,7 @@ public class Sql {
             return null;
         }
 
-        Object value = row.values().iterator().next();
-
-        return (String) value;
+        return (String) getFirstValue(row);
     }
 
     public Boolean selectBoolean() {
@@ -227,8 +216,8 @@ public class Sql {
         if (row == null) {
             return null;
         }
-        //첫 번째 오는 값을 value로 집어넣기
-        Object value = row.values().iterator().next();
+
+        Object value = getFirstValue(row);
 
         if (value instanceof Boolean) {
             return (Boolean) value;
@@ -251,9 +240,29 @@ public class Sql {
         //rows 안에 있는 Map<String, Object>에서 value를 꺼내서 longs에 추가한다.
         for (int i = 0; i < rows.size(); i++) {
             Map<String, Object> row = rows.get(i);
-            Object value = row.values().iterator().next();
-            longs.add((Long) value);
+            longs.add((Long) getFirstValue(row));
         }
+
         return longs;
+    }
+
+    private <T> T mapToObject(Map<String, Object> row, Class<T> clazz) {
+        try{
+            T obj = clazz.getDeclaredConstructor().newInstance();
+
+            String[] columnNames = row.keySet().toArray(new String[0]);
+
+            for(int i = 0; i < columnNames.length; i++) {
+                String columnName = columnNames[i];
+                Object value = row.get(columnName);
+
+                Field field = clazz.getDeclaredField(columnName);
+                field.setAccessible(true);
+                field.set(obj, value);
+            }
+            return obj;
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

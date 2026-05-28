@@ -88,5 +88,6 @@ public class SimpleDb {
     }
 
     public void close() {
+        //커넥션 닫기
     }
 }

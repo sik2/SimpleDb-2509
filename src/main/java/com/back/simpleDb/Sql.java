@@ -56,7 +56,16 @@ public class Sql {
             throw new RuntimeException("UPDATE failed: " + e.getMessage(), e);
         }
     }
-    public int delete() { throw new UnsupportedOperationException(); }
+    public int delete() {
+        String sql = buildSql();
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            bindParams(pstmt, params);
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("DELETE failed: " + e.getMessage(), e);
+        }
+    }
     public List<Map<String, Object>> selectRows() { throw new UnsupportedOperationException(); }
     public Map<String, Object> selectRow() { throw new UnsupportedOperationException(); }
     public LocalDateTime selectDatetime() { throw new UnsupportedOperationException(); }

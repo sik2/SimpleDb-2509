@@ -174,13 +174,14 @@ public class Sql {
         if(row == null) {
             return null;
         }
-
+        //첫 번째 오는 값을 value로 집어넣기
         Object value = row.values().iterator().next();
 
         if(value instanceof Boolean) {
             return (Boolean) value;
         }
-
+        /*value로 온 것을 숫자로 보고 int 값으로 꺼낸 뒤,
+        그 값이 1인지 비교해서 true 또는 false를 반환한다.*/
         return ((Number)value).intValue() == 1;
     }
 

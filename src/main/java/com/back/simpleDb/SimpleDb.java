@@ -69,4 +69,48 @@ public class SimpleDb {
             threadLocalConnection.remove();
         }
     }
+
+    public void run(String sql, Object... params) {
+        Connection conn = getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) {
+                pstmt.setObject(i + 1, params[i]);
+            }
+            pstmt.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException("run() failed: " + e.getMessage(), e);
+        }
+    }
+
+    public Sql genSql() {
+        return new Sql(this);
+    }
+
+    public void startTransaction() {
+        try {
+            getConnection().setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void commit() {
+        try {
+            Connection conn = getConnection();
+            conn.commit();
+            conn.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void rollback() {
+        try {
+            Connection conn = getConnection();
+            conn.rollback();
+            conn.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

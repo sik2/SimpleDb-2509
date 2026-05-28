@@ -106,8 +106,7 @@ public class Sql {
         });
     }
 
-    public <T> T selectRow(Class<T> cls)
-    {
+    public <T> T selectRow(Class<T> cls) {
         return selectRows(cls).getFirst();
     }
 

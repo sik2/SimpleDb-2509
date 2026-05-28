@@ -1,5 +1,3 @@
-```
-
 ## Troubleshooting
 
 ### `handler.handle(stmt)`가 실제 SQL 실행 지점인가?

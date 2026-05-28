@@ -46,7 +46,16 @@ public class Sql {
         return 0L;
     }
 
-    public int update() { throw new UnsupportedOperationException(); }
+    public int update() {
+        String sql = buildSql();
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            bindParams(pstmt, params);
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("UPDATE failed: " + e.getMessage(), e);
+        }
+    }
     public int delete() { throw new UnsupportedOperationException(); }
     public List<Map<String, Object>> selectRows() { throw new UnsupportedOperationException(); }
     public Map<String, Object> selectRow() { throw new UnsupportedOperationException(); }

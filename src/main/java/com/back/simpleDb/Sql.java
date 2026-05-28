@@ -177,7 +177,11 @@ public class Sql {
 
         Object value = row.values().iterator().next();
 
-        return (Boolean) value;
+        if(value instanceof Boolean) {
+            return (Boolean) value;
+        }
+
+        return ((Number)value).intValue() == 1;
     }
 
     public List<Long> selectLongs() {

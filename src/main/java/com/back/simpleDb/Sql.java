@@ -1,5 +1,7 @@
 package com.back.simpleDb;
 
+import com.back.Article;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -160,7 +162,29 @@ public class Sql {
             throw new RuntimeException("Long 목록 조회 중 오류가 발생했습니다.", e);
         }
     }
-    public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    public List<Article> selectRows(Class<Article> articleClass) {
+        String sql = sqlBuilder.toString();
+        try (var conn = simpleDb.getConnection();
+             var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                List<Article> result = new ArrayList<>();
+                while (rs.next()) {
+                    Article article = new Article();
+                    article.setId(rs.getLong("id"));
+                    article.setTitle(rs.getString("title"));
+                    article.setBody(rs.getString("body"));
+                    article.setCreatedDate(rs.getTimestamp("createdDate").toLocalDateTime());
+                    article.setModifiedDate(rs.getTimestamp("modifiedDate").toLocalDateTime());
+                    article.setBlind(rs.getBoolean("isBlind"));
+                    result.add(article);
+                }
+                return result;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("객체 목록 매핑 중 오류가 발생했습니다.", e);
+        }
+    }
     public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
 
     private int executeUpdateLike(String actionName) {

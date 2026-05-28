@@ -1,8 +1,10 @@
 package com.back.simpleDb;
 
 import java.time.LocalDateTime;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,76 +35,129 @@ public class Sql {
     }
 
     public long insert() {
-        long insert =  simpleDb.insert(sql, params.toArray());
-        sql = "";
-        return insert;
+        return simpleDb.insert(sql, params.toArray());
     }
 
     public int update() {
-        int update = simpleDb.runForRowsCount(sql, params.toArray());
-        sql = "";
-        return update;
+        return simpleDb.runForRowsCount(sql, params.toArray());
     }
 
     public int delete() {
-        int delete = simpleDb.runForRowsCount(sql, params.toArray());
-        sql = "";
-        return delete;
+        return simpleDb.runForRowsCount(sql, params.toArray());
     }
 
     public List<Map<String, Object>> selectRows() {
-        List<Map<String, Object>> selectedRows = simpleDb.runForRows(sql,params.toArray());
-        sql = "";
-        return selectedRows;
+        return simpleDb.execute(sql, params.toArray(), stmt -> {
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<Map<String, Object>> rows = new ArrayList<>();
+
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+
+                    for (int i = 1; i <= columnCount; i++) {
+                        row.put(metaData.getColumnName(i), rs.getObject(i));
+                    }
+
+                    rows.add(row);
+                }
+
+                return rows;
+            }
+        });
     }
 
     public Map<String, Object> selectRow() {
-        Map<String, Object> selectedRow = simpleDb.runForRows(sql, params.toArray()).getFirst();
-        sql = "";
-        return selectedRow;
+        return selectRows().getFirst();
     }
 
     public <T> List<T> selectRows(Class<T> cls) {
-        List<T> selectedRows = simpleDb.runForRows(sql, cls, params.toArray());
+        return simpleDb.execute(sql, params.toArray(), stmt -> {
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<T> rows = new ArrayList<>();
 
-        sql = "";
-        return selectedRows;
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+
+                while (rs.next()) {
+                    T instance = cls.getDeclaredConstructor().newInstance();
+
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        Object value = rs.getObject(i);
+
+                        try {
+                            var field = cls.getDeclaredField(columnName);
+                            field.setAccessible(true);
+                            field.set(instance, value);
+                        } catch (NoSuchFieldException ignored) {
+                        }
+                    }
+
+                    rows.add(instance);
+                }
+
+                return rows;
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public <T> T selectRow(Class<T> cls)
     {
-        T selectedRow = simpleDb.runForRows(sql, cls, params.toArray()).getFirst();
-        sql = "";
-        return selectedRow;
+        return selectRows(cls).getFirst();
     }
 
     public LocalDateTime selectDatetime() {
-        LocalDateTime selectDatetime = simpleDb.selectOne(sql, LocalDateTime.class, params.toArray());
-        sql = "";
-        return selectDatetime;
+        return selectOne(LocalDateTime.class);
     }
 
     public Long selectLong() {
-        Long id = simpleDb.selectOne(sql, Long.class, params.toArray());
-        sql = "";
-        return id;
+        return selectOne(Long.class);
     }
 
     public List<Long> selectLongs() {
-        List<Long> foundIds = simpleDb.selectOneList(sql, Long.class, params.toArray());
-        sql = "";
-        return foundIds;
+        return selectOneList(Long.class);
     }
 
     public String selectString() {
-        String string = simpleDb.selectOne(sql, String.class, params.toArray());
-        sql = "";
-        return string;
+        return selectOne(String.class);
     }
 
     public Boolean selectBoolean() {
-        Boolean aBoolean = simpleDb.selectOne(sql, Boolean.class, params.toArray());
-        sql = "";
-        return aBoolean;
+        return selectOne(Boolean.class);
+    }
+
+    private <T> T selectOne(Class<T> cls) {
+        return simpleDb.execute(sql, params.toArray(), stmt -> {
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) return null;
+
+                Object value = rs.getObject(1);
+
+                if (cls == Boolean.class && value instanceof Number number) {
+                    return cls.cast(number.intValue() == 1);
+                }
+
+                return cls.cast(value);
+            }
+        });
+    }
+
+    private <T> List<T> selectOneList(Class<T> cls) {
+        return simpleDb.execute(sql, params.toArray(), stmt -> {
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<T> list = new ArrayList<>();
+
+                while (rs.next()) {
+                    list.add(cls.cast(rs.getObject(1)));
+                }
+
+                return list;
+            }
+        });
     }
 }

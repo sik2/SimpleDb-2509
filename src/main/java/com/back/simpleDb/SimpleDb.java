@@ -3,7 +3,6 @@ package com.back.simpleDb;
 import lombok.Setter;
 
 import java.sql.*;
-import java.util.*;
 
 public class SimpleDb {
     private final String host;
@@ -41,7 +40,7 @@ public class SimpleDb {
     }
 
     @FunctionalInterface
-    private interface StatementHandler<T> {
+    interface StatementHandler<T> {
         T handle(PreparedStatement stmt) throws SQLException;
     }
 
@@ -51,7 +50,7 @@ public class SimpleDb {
         }
     }
 
-    private <T> T execute(
+    <T> T execute(
             String sql,
             Object[] params,
             StatementHandler<T> handler
@@ -104,99 +103,6 @@ public class SimpleDb {
     public int runForRowsCount(String sql, Object... params) {
         return execute(sql, params, PreparedStatement::executeUpdate);
     }
-
-    public List<Map<String, Object>> runForRows(String sql, Object... params) {
-        return execute(sql, params, stmt -> {
-            try (ResultSet rs = stmt.executeQuery()) {
-                List<Map<String, Object>> rows = new ArrayList<>();
-
-                ResultSetMetaData metaData = rs.getMetaData();
-                int columnCount = metaData.getColumnCount();
-
-                while (rs.next()) {
-                    Map<String, Object> row = new LinkedHashMap<>();
-
-                    for (int i = 1; i <= columnCount; i++) {
-                        row.put(metaData.getColumnName(i), rs.getObject(i));
-                    }
-
-                    rows.add(row);
-                }
-
-                return rows;
-            }
-        });
-    }
-
-    public <T> List<T> runForRows(String sql, Class<T> cls, Object... params) {
-        return execute(sql, params, stmt -> {
-            try (ResultSet rs = stmt.executeQuery()) {
-                List<T> rows = new ArrayList<>();
-
-                ResultSetMetaData metaData = rs.getMetaData();
-                int columnCount = metaData.getColumnCount();
-
-                while (rs.next()) {
-                    T instance = cls.getDeclaredConstructor().newInstance();
-
-                    for (int i = 1; i <= columnCount; i++) {
-                        String columnName = metaData.getColumnName(i);
-                        Object value = rs.getObject(i);
-
-                        try {
-                            var field = cls.getDeclaredField(columnName);
-                            field.setAccessible(true);
-                            field.set(instance, value);
-                        } catch (NoSuchFieldException ignored) {
-                        }
-                    }
-
-                    rows.add(instance);
-                }
-
-                return rows;
-            } catch (ReflectiveOperationException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    public <T> T selectOne(String sql, Class<T> cls, Object... params) {
-        return execute(sql, params, stmt -> {
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) return null;
-
-                if (cls == Boolean.class) {
-                    Object value = rs.getObject(1);
-
-                    if (value instanceof Boolean bool) {
-                        return cls.cast(bool);
-                    }
-
-                    if (value instanceof Number number) {
-                        return cls.cast(number.intValue() == 1);
-                    }
-                }
-
-                return cls.cast(rs.getObject(1));
-            }
-        });
-    }
-
-    public <T> List<T> selectOneList(String sql, Class<T> cls, Object... params) {
-        return execute(sql, params, stmt -> {
-            try (ResultSet rs = stmt.executeQuery()) {
-                List<T> list = new ArrayList<>();
-
-                while (rs.next()) {
-                    list.add(cls.cast(rs.getObject(1)));
-                }
-
-                return list;
-            }
-        });
-    }
-
 
     public void close() {
         Connection conn = connectionThread.get();

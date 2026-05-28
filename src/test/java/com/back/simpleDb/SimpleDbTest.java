@@ -2,7 +2,6 @@ package com.back.simpleDb;
 
 import com.back.Article;
 import org.junit.jupiter.api.*;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -71,6 +70,12 @@ public class SimpleDbTest {
 
     private void truncateArticleTable() {
         simpleDb.run("TRUNCATE article");
+    }
+
+    @Test
+    @DisplayName("connection test")
+    void connectionTest() {
+        simpleDb.run("SELECT * FROM article");
     }
 
     @Test
@@ -360,7 +365,7 @@ public class SimpleDbTest {
 
         assertThat(foundIds).isEqualTo(Arrays.stream(ids).toList());
     }
-
+//
     @Test
     @DisplayName("selectRows, Article")
     public void t015() {

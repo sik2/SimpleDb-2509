@@ -31,6 +31,23 @@ public class Sql {
     }
 
     public Sql appendIn(String sql, Object... params) {
+        String questionMarks = "?";
+        //파라미터 개수만큼 "?" 늘리기
+        for (int i = 1; i < params.length; i++) {
+            //문자열 뒤에 ", ?" 붙이기
+            questionMarks += ", ?";
+        }
+        //기존 SQL 안의 "?"를 questionMarks로 바꿔주기
+        //"WHERE id IN (?)" -> "WHERE id IN (?, ?, ?)"
+        sql = sql.replace("?", questionMarks);
+
+        sqlBuilder.append(sql).append(" ");
+
+        for (int i = 0; i < params.length; i++) {
+            Object param = params[i];
+            this.params.add(param);
+        }
+
         return this;
     }
 
@@ -115,14 +132,14 @@ public class Sql {
     }
 
     /*
-    * selectRows()는 MySQL이 찾아서 반환한 ResultSet을 컬럼명과 컬럼값으로 묶어서
-    * List<Map<String, Object>>로 바꿔준다.
-    * selectRow()는 그 결과 리스트에서 첫 번째 row만 꺼내서 반환한다.
-    */
+     * selectRows()는 MySQL이 찾아서 반환한 ResultSet을 컬럼명과 컬럼값으로 묶어서
+     * List<Map<String, Object>>로 바꿔준다.
+     * selectRow()는 그 결과 리스트에서 첫 번째 row만 꺼내서 반환한다.
+     */
     public Map<String, Object> selectRow() {
         List<Map<String, Object>> rows = selectRows();
 
-        if(rows.isEmpty()) {
+        if (rows.isEmpty()) {
             return null;
         }
         return rows.get(0);
@@ -135,7 +152,7 @@ public class Sql {
     public LocalDateTime selectDatetime() {
         Map<String, Object> row = selectRow();
 
-        if(row == null) {
+        if (row == null) {
             return null;
         }
 
@@ -147,7 +164,7 @@ public class Sql {
     public Long selectLong() {
         Map<String, Object> row = selectRow();
 
-        if(row == null) {
+        if (row == null) {
             return null;
         }
 
@@ -159,7 +176,7 @@ public class Sql {
     public String selectString() {
         Map<String, Object> row = selectRow();
 
-        if(row == null) {
+        if (row == null) {
             return null;
         }
 
@@ -171,18 +188,18 @@ public class Sql {
     public Boolean selectBoolean() {
         Map<String, Object> row = selectRow();
 
-        if(row == null) {
+        if (row == null) {
             return null;
         }
         //첫 번째 오는 값을 value로 집어넣기
         Object value = row.values().iterator().next();
 
-        if(value instanceof Boolean) {
+        if (value instanceof Boolean) {
             return (Boolean) value;
         }
         /*value로 온 것을 숫자로 보고 int 값으로 꺼낸 뒤,
         그 값이 1인지 비교해서 true 또는 false를 반환한다.*/
-        return ((Number)value).intValue() == 1;
+        return ((Number) value).intValue() == 1;
     }
 
     public List<Long> selectLongs() {

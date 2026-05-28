@@ -106,7 +106,10 @@ public class Sql {
             default -> rs.getObject(index);
         };
     }
-    public Map<String, Object> selectRow() { throw new UnsupportedOperationException(); }
+    public Map<String, Object> selectRow() {
+        List<Map<String, Object>> rows = selectRows();
+        return rows.isEmpty() ? null : rows.get(0);
+    }
     public LocalDateTime selectDatetime() { throw new UnsupportedOperationException(); }
     public Long selectLong() { throw new UnsupportedOperationException(); }
     public List<Long> selectLongs() { throw new UnsupportedOperationException(); }

@@ -157,7 +157,15 @@ public class Sql {
     }
 
     public String selectString() {
-        return null;
+        Map<String, Object> row = selectRow();
+
+        if(row == null) {
+            return null;
+        }
+
+        Object value = row.values().iterator().next();
+
+        return (String) value;
     }
 
     public Boolean selectBoolean() {

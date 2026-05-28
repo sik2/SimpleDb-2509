@@ -1,7 +1,9 @@
 package com.back.simpleDb;
 
+import com.back.entity.Article;
 import lombok.SneakyThrows;
 
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -127,8 +129,24 @@ public class Sql {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
+    @SneakyThrows
     public <T> T selectRow(Class<T> cls) {
-        return null;
+        // 이전 케이스와는 다르게 바로 객체를 불러오는 경우
+
+        // DB 결과를 Map형식으로 저장
+        Map<String, Object> objMap = selectRow();
+        // 해당 Map을 갖는 빈 객체 생성
+        T obj = cls.getDeclaredConstructor().newInstance();
+
+        // 순회를 통해 각 컬럼명을 Article에서 찾아서 필드에 값 저장
+        // Map.Entry는 Map의 키-값 1개가 담긴 객체
+        for (Map.Entry<String, Object> entry : objMap.entrySet()) {
+            Field field = Article.class.getDeclaredField(entry.getKey());
+            field.setAccessible(true);
+            field.set(obj, entry.getValue());
+        }
+
+        return obj;
     }
 
     @SneakyThrows

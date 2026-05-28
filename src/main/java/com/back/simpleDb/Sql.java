@@ -90,14 +90,13 @@ public class Sql {
 
     public int delete() {
         return executeUpdate();
-
     }
 
     //여러 값 출력
     public List<Map<String, Object>> selectRows() {
         Connection conn = simpleDb.getConnection();
 
-        try(PreparedStatement pstmt = prepareStatement(conn); ResultSet rs = pstmt.executeQuery();) {
+        try(PreparedStatement pstmt = prepareStatement(conn); ResultSet rs = pstmt.executeQuery()) {
 
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
@@ -113,9 +112,7 @@ public class Sql {
 
                     row.put(columnName, value);
                 }
-
                 rows.add(row);
-
             }
 
             return rows;
@@ -133,7 +130,30 @@ public class Sql {
 
     // 단건 출력
     public Map<String, Object> selectRow() {
-        return null;
+        Connection conn = simpleDb.getConnection();
+
+        try(PreparedStatement pstmt = prepareStatement(conn); ResultSet rs = pstmt.executeQuery()) {
+
+
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            if(rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+                for(int i = 1; i <= columnCount; i++) {
+                    String columnName = metaData.getColumnLabel(i);
+                    Object value = rs.getObject(i);
+                    row.put(columnName, value);
+                }
+                return row;
+            }
+
+            return null;
+
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     public Article selectRow(Class<Article> article) {

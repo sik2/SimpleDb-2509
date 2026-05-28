@@ -50,7 +50,7 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-        List<Map<String, Object>> selectedRows = simpleDb.runForRows(sql, params.toArray());
+        List<Map<String, Object>> selectedRows = simpleDb.runForRows(sql,params.toArray());
         sql = "";
         return selectedRows;
     }
@@ -62,14 +62,18 @@ public class Sql {
     }
 
     public <T> List<T> selectRows(Class<T> cls) {
+        List<T> selectedRows = simpleDb.runForRows(sql, cls, params.toArray());
+
         sql = "";
-        return null;
+        return selectedRows;
     }
 
     public <T> T selectRow(Class<T> cls)
     {
+        T selectedRow = simpleDb.runForRows(sql, cls, params.toArray()).getFirst();
+
         sql = "";
-        return null;
+        return selectedRow;
     }
 
     public LocalDateTime selectDatetime() {

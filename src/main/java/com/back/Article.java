@@ -13,5 +13,5 @@ public class Article {
     private LocalDateTime modifiedDate;
     private String title;
     private String body;
-    private boolean blind;
+    private boolean isBlind;
 }

@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 @Setter
@@ -120,6 +117,39 @@ public class SimpleDb {
                 }
 
                 return rows;
+            }
+        });
+    }
+
+    public <T> List<T> runForRows(String sql, Class<T> cls, Object... params) {
+        return execute(sql, params, stmt -> {
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<T> rows = new ArrayList<>();
+
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+
+                while (rs.next()) {
+                    T instance = cls.getDeclaredConstructor().newInstance();
+
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        Object value = rs.getObject(i);
+
+                        try {
+                            var field = cls.getDeclaredField(columnName);
+                            field.setAccessible(true);
+                            field.set(instance, value);
+                        } catch (NoSuchFieldException ignored) {
+                        }
+                    }
+
+                    rows.add(instance);
+                }
+
+                return rows;
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
             }
         });
     }

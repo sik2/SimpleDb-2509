@@ -144,7 +144,22 @@ public class Sql {
             throw new RuntimeException("boolean 조회 중 오류가 발생했습니다.", e);
         }
     }
-    public List<Long> selectLongs() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    public List<Long> selectLongs() {
+        String sql = sqlBuilder.toString();
+        try (var conn = simpleDb.getConnection();
+             var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                List<Long> values = new ArrayList<>();
+                while (rs.next()) {
+                    values.add(rs.getLong(1));
+                }
+                return values;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Long 목록 조회 중 오류가 발생했습니다.", e);
+        }
+    }
     public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
     public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
 

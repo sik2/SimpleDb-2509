@@ -50,9 +50,9 @@ stmt -> stmt.executeQuery()      -> SELECT 실행
 
 ```java
 if (devMode) {
-    System.out.println(sql);
+        System.out.println(sql);
     System.out.println(Arrays.toString(params));
-}
+        }
 ```
 
 주의:
@@ -95,7 +95,7 @@ simpleDb.rollback();
 
 ```java
 try (Connection conn = getConnection()) {
-    conn.setAutoCommit(false);
+        conn.setAutoCommit(false);
 }
 ```
 
@@ -111,8 +111,8 @@ try (Connection conn = getConnection()) {
 
 ```java
 try (Connection conn = getConnection()) {
-    // ...
-}
+        // ...
+        }
 ```
 
 해결:
@@ -122,8 +122,8 @@ try (Connection conn = getConnection()) {
 Connection conn = getConnection();
 
 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-    // ...
-}
+        // ...
+        }
 ```
 
 주의:
@@ -147,7 +147,7 @@ connectionThread.remove()    -> 현재 스레드에 저장된 참조를 제거
 
 ```java
 finally {
-    connectionThread.remove();
+        connectionThread.remove();
 }
 ```
 
@@ -262,11 +262,11 @@ String columnName = metaData.getColumnName(i);
 Object value = rs.getObject(i);
 
 try {
-    var field = cls.getDeclaredField(columnName);
+var field = cls.getDeclaredField(columnName);
     field.setAccessible(true);
     field.set(instance, value);
 } catch (NoSuchFieldException ignored) {
-}
+        }
 ```
 
 효과:
@@ -274,31 +274,3 @@ try {
 
 주의:
 Java의 제네릭 타입 `T`는 런타임에 사라지므로 `new T()`를 직접 할 수 없습니다. 실제 객체를 만들려면 `Article.class` 같은 타입 정보가 필요합니다.
-
-## `Sql` 객체를 재사용할 때 파라미터가 섞이는 문제
-
-증상:
-같은 `Sql` 객체로 여러 번 쿼리를 실행하면 이전 쿼리의 파라미터가 다음 쿼리에 섞일 수 있습니다.
-
-원인:
-`Sql`은 내부에 SQL 문자열과 파라미터 리스트를 상태로 가지고 있습니다.
-
-```java
-private String sql = "";
-private final List<Object> params = new ArrayList<>();
-```
-
-실행 후 `sql`만 비우고 `params`를 비우지 않으면 이전 파라미터가 남습니다.
-
-해결:
-실행 후 상태를 초기화할 때는 둘 다 비워야 합니다.
-
-```java
-private void clear() {
-    sql = "";
-    params.clear();
-}
-```
-
-주의:
-매번 `simpleDb.genSql()`로 새 `Sql` 객체를 만들어 쓰면 이 문제가 잘 드러나지 않습니다. 하지만 `Sql` 객체가 상태를 가진다는 점은 계속 신경 써야 합니다.

@@ -56,10 +56,9 @@ public class SimpleDb {
             Object[] params,
             StatementHandler<T> handler
     ) {
-        try (
-                Connection conn = getConnection();
-        ) {
-            PreparedStatement stmt = conn.prepareStatement(sql);
+        Connection conn = getConnection();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             setParams(stmt, params);
 
             return handler.handle(stmt);
@@ -73,10 +72,9 @@ public class SimpleDb {
             Object[] params,
             StatementHandler<T> handler
     ) {
-        try (
-                Connection conn = getConnection();
-        ) {
-            PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        Connection conn = getConnection();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setParams(stmt, params);
 
             return handler.handle(stmt);
@@ -214,9 +212,8 @@ public class SimpleDb {
     }
 
     public void startTransaction() {
-        try (
-                Connection conn = getConnection();
-        ) {
+        try {
+            Connection conn = getConnection();
             conn.setAutoCommit(false);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -224,8 +221,26 @@ public class SimpleDb {
     }
 
     public void rollback() {
+        try {
+            Connection conn = getConnection();
+            conn.rollback();
+            conn.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            close();
+        }
     }
 
     public void commit() {
+        try {
+            Connection conn = getConnection();
+            conn.commit();
+            conn.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            close();
+        }
     }
 }

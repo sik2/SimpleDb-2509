@@ -19,20 +19,7 @@ src/
 └── test/java/com/back/simpleDb/
 └── SimpleDbTest.java         # 단위 테스트 t001~t019
 
-## 사용 예시
-```java
-SimpleDb simpleDb = new SimpleDb("localhost", "root", "root123414", "simpleDb__test");
 
-// INSERT
-long id = simpleDb.genSql()
-    .append("INSERT INTO article SET createdDate = NOW(), title = ?", "제목")
-    .insert();
-
-// SELECT
-Article article = simpleDb.genSql()
-    .append("SELECT * FROM article WHERE id = ?", id)
-    .selectRow(Article.class);
-```
 ---
 
 ## 단위 테스트 체크리스트

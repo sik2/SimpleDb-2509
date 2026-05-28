@@ -1,8 +1,6 @@
 package com.back.simpleDb;
 
-import com.back.Article;
 import org.junit.jupiter.api.*;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -27,13 +25,13 @@ public class SimpleDbTest {
         simpleDb = new SimpleDb("localhost", "root", "root123414", "simpleDb__test");
         simpleDb.setDevMode(true);
 
-        createArticleTable();
+        createArticleTable();   //article 테이블 DROP 후 CREATE
     }
 
     @BeforeEach
     public void beforeEach() {
-        truncateArticleTable();
-        makeArticleTestData();
+        truncateArticleTable(); //데이터베이스 유지한 채 데이터 삭제
+        makeArticleTestData();  //더미 데이터 INSERT
     }
 
     private static void createArticleTable() {
@@ -76,7 +74,7 @@ public class SimpleDbTest {
     @Test
     @DisplayName("insert")
     public void t001() {
-        Sql sql = simpleDb.genSql();
+        Sql sql = simpleDb.genSql();    //sql 객체 생성
         /*
         == rawSql ==
         INSERT INTO article
@@ -207,6 +205,7 @@ public class SimpleDbTest {
 
         LocalDateTime datetime = sql.selectDatetime();
 
+        //두 시간 사이의 초 단위 차이를 계산
         long diff = ChronoUnit.SECONDS.between(datetime, LocalDateTime.now());
 
         assertThat(diff).isLessThanOrEqualTo(1L);
@@ -354,7 +353,7 @@ public class SimpleDbTest {
         sql.append("SELECT id")
                 .append("FROM article")
                 .appendIn("WHERE id IN (?)", ids)
-                .appendIn("ORDER BY FIELD (id, ?)", ids);
+                .appendIn("ORDER BY FIELD (id, ?)", ids);   //ORDER BY FIELD (column, 1순위, 2순위, 3순위, n순위...)
 
         List<Long> foundIds = sql.selectLongs();
 
@@ -363,7 +362,7 @@ public class SimpleDbTest {
 
     @Test
     @DisplayName("selectRows, Article")
-    public void t015() {
+    public void t015() {    //t004 반환값 : List<Map> => t015 : List<Article>
         Sql sql = simpleDb.genSql();
         /*
         == rawSql ==

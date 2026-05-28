@@ -1,4 +1,67 @@
-# 아래 테스트케이스들을 만족시켜주세요.
+# SimpleDb
+
+Spring 없이 순수 JDBC로 구현한 경량 SQL 빌더 라이브러리입니다.  
+`SimpleDb` 인스턴스 하나를 여러 스레드에서 안전하게 공유할 수 있으며, `Sql` 빌더를 통해 INSERT / UPDATE / DELETE / SELECT를 체이닝 방식으로 작성합니다.
+
+---
+
+## 구현 기능
+
+| 분류 | 메서드 |
+|------|--------|
+| SQL 빌더 | `append()`, `appendIn()` |
+| DML | `insert()`, `update()`, `delete()` |
+| 단일 값 조회 | `selectLong()`, `selectString()`, `selectBoolean()`, `selectDatetime()` |
+| 다중 행 조회 | `selectRows()`, `selectRows(Class<T>)` |
+| 단일 행 조회 | `selectRow()`, `selectRow(Class<T>)` |
+| 트랜잭션 | `startTransaction()`, `commit()`, `rollback()` |
+| 스레드 관리 | `ThreadLocal<Connection>` 기반 스레드별 독립 커넥션 |
+
+---
+
+## 💡 어려웠던 점 & 느낀 점
+
+### 어려웠던 점
+
+**1. Spring 없이 순수 JDBC로 접근하기**  
+평소에는 Spring이 `DataSource`, 트랜잭션, 커넥션 관리를 모두 처리해줬기 때문에  
+`DriverManager.getConnection()`부터 직접 시작하는 방식이 처음에는 낯설고 어려웠습니다.
+
+**2. 단건/다건 조회 공통 헬퍼 함수 설계**  
+`selectLong()`, `selectString()`, `selectBoolean()`, `selectDatetime()`, `selectRows()` 등  
+여러 조회 메서드가 PreparedStatement 생성 → 파라미터 바인딩 → 실행 → 결과 매핑이라는 동일한 흐름을 반복했습니다.  
+이 중복을 제거하기 위해 제네릭 기반의 공통 헬퍼 메서드를 설계하는 과정이 생각보다 까다로웠습니다.  
+특히 `ResultSet`을 람다로 받아 결과 타입을 자유롭게 지정하는 `@FunctionalInterface` 패턴을 적용하면서  
+제네릭 타입 추론과 checked exception 처리 방식을 다시 공부하게 되었습니다.
+
+---
+
+### 느낀 점
+
+이번 과제를 통해 JDBC의 기본 흐름을 직접 손으로 구현하며 체득할 수 있었습니다.
+
+```
+커넥션 획득 (DriverManager.getConnection)
+    ↓
+PreparedStatement 준비 (파라미터 바인딩)
+    ↓
+실제 DB에 쿼리 실행 (executeUpdate / executeQuery)
+    ↓
+결과 반환 (ResultSet → Java 객체 변환)
+    ↓
+SQLException 처리
+    ↓
+커넥션 종료 (close / ThreadLocal.remove)
+```
+
+Spring의 `JdbcTemplate`이 이 반복적인 흐름을 대신 처리해준다는 것을 알고 있었지만,  
+직접 구현해보니 그 내부에서 어떤 일이 일어나는지 훨씬 명확하게 이해하게 되었습니다.  
+또한 `ThreadLocal`을 활용해 멀티스레드 환경에서 커넥션을 스레드별로 격리하는 방법을 익히면서,  
+스레드 안전성이 왜 중요한지 실감할 수 있었습니다.
+
+---
+
+## 테스트케이스
 
 ```java
 package com.back.simpleDb;

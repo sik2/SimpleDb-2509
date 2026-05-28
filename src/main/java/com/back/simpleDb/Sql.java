@@ -201,8 +201,22 @@ public class Sql {
         그 값이 1인지 비교해서 true 또는 false를 반환한다.*/
         return ((Number) value).intValue() == 1;
     }
-
+    /*SELECT id
+    FROM article
+    WHERE id IN (?, ?, ?)
+    ORDER BY FIELD(id, ?, ?, ?)*/
     public List<Long> selectLongs() {
-        return null;
+        //selectRows()로 조회 결과를 List<Map<String, Object>>로 가져온다.
+        List<Map<String, Object>> rows = selectRows();
+        //최종 결과 값을 담을 LIST 생성
+        List<Long> longs = new ArrayList<>();
+
+        //rows 안에 있는 Map<String, Object>에서 value를 꺼내서 longs에 추가한다.
+        for (int i = 0 ; i < rows.size(); i++) {
+            Map<String, Object> row = rows.get(i);
+            Object value = row.values().iterator().next();
+            longs.add((Long) value);
+        }
+        return longs;
     }
 }

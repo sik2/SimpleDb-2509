@@ -169,7 +169,14 @@ public class Sql {
         }
         return null;
     }
-    public Sql appendIn(String sql, Object... values) { throw new UnsupportedOperationException(); }
+    public Sql appendIn(String sql, Object... values) {
+        if (sqlBuilder.length() > 0) sqlBuilder.append("\n");
+        String placeholders = String.join(", ", Collections.nCopies(values.length, "?"));
+        String expanded = sql.trim().replaceFirst("\\?", placeholders);
+        sqlBuilder.append(expanded);
+        Collections.addAll(params, values);
+        return this;
+    }
     public <T> T selectRow(Class<T> clazz) { throw new UnsupportedOperationException(); }
     public <T> List<T> selectRows(Class<T> clazz) { throw new UnsupportedOperationException(); }
 }

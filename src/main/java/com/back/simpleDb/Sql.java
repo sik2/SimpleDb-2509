@@ -145,7 +145,15 @@ public class Sql {
     }
 
     public Long selectLong() {
-        return null;
+        Map<String, Object> row = selectRow();
+
+        if(row == null) {
+            return null;
+        }
+
+        Object value = row.values().iterator().next();
+
+        return (Long) value;
     }
 
     public String selectString() {

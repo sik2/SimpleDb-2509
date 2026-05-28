@@ -166,7 +166,23 @@ public class Sql {
     }
 
     public <T> T selectRow(Class<T> clazz) {
-        return null;
+        List<Map<String, Object>> rows = selectRows();
+        Article article = new Article();
+
+        if (rows.isEmpty()) {
+            return null;
+        }
+
+        Map<String, Object> row = rows.get(0);
+
+        article.setId((Long) row.get("id"));
+        article.setTitle((String) row.get("title"));
+        article.setBody((String) row.get("body"));
+        article.setCreatedDate((LocalDateTime) row.get("createdDate"));
+        article.setModifiedDate((LocalDateTime) row.get("modifiedDate"));
+        article.setBlind((Boolean) row.get("isBlind"));
+
+        return (T) article;
     }
 
     public LocalDateTime selectDatetime() {

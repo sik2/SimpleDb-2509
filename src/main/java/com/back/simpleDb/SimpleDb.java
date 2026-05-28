@@ -1,5 +1,7 @@
 package com.back.simpleDb;
 
+import lombok.SneakyThrows;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,6 +13,8 @@ public class SimpleDb {
     private final String password;
     private final String log;
 
+    private Connection connection;
+
     public SimpleDb(String localhost, String root, String password, String log) {
         this.localhost = localhost;
         this.root = root;
@@ -20,16 +24,24 @@ public class SimpleDb {
 
     public Connection getConnection() {
         try {
-            return DriverManager.getConnection(
+            // 기존 커넥션 재사용 ( 커넥션이 있고 사용중일 때 )
+            if (connection != null && !connection.isClosed()) {
+                return connection;
+            }
+
+            // 신규 커넥션 생성
+            connection =  DriverManager.getConnection(
                     // 시간대 설정 추가, MySQL 서버의 시간대와 애플리케이션의 시간대를 맞추기 위해 사용
                     "jdbc:mysql://" + localhost + ":3306/" + log + "?sessionVariables=time_zone='%2B09:00'",
                     root,
                     password
             );
+
+            return  connection;
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     public void setDevMode(boolean b) {
@@ -58,12 +70,24 @@ public class SimpleDb {
     public void close() {
     }
 
+    @SneakyThrows
     public void startTransaction() {
+        // JDBC는 자동 커밋이 되기 때문에 AutoCommit을 꺼서 자동 커밋이 안 되도록 함
+        Connection c = getConnection();
+        c.setAutoCommit(false);
     }
 
+    @SneakyThrows
     public void commit() {
+        // 수동으로 커밋을 진행하고, 기존 연결을 재사용함
+        Connection c = getConnection();
+        c.commit();
     }
 
+    @SneakyThrows
     public void rollback() {
+        // 수동으로 롤백을 진행하고, 기존 연결을 재사용함
+        Connection c = getConnection();
+        c.rollback();
     }
 }

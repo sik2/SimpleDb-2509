@@ -1,5 +1,7 @@
 package com.back.simpleDb;
 
+import com.back.domain.Article;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -127,8 +129,26 @@ public class Sql {
         }
     }
 
+    /*DB결과를 Map 리스트로 만든다음
+    selectRows()로 가져온 결과를 List<Map<String, Object>>로 가져온다.*/
     public <T> List<T> selectRows(Class<T> clazz) {
-        return null;
+        List<Map<String, Object>> rows = selectRows();
+        List<Article> articles = new ArrayList<>();
+
+        for(int i = 0 ; i < rows.size(); i++) {
+            Map<String, Object> row = rows.get(i);
+            Article article = new Article();
+
+            article.setId((Long) row.get("id"));
+            article.setTitle((String) row.get("title"));
+            article.setBody((String) row.get("body"));
+            article.setCreatedDate((LocalDateTime) row.get("createdDate"));
+            article.setModifiedDate((LocalDateTime) row.get("modifiedDate"));
+            article.setBlind((Boolean) row.get("isBlind"));
+
+            articles.add(article);
+        }
+        return (List<T>) articles;
     }
 
     /*
@@ -201,6 +221,7 @@ public class Sql {
         그 값이 1인지 비교해서 true 또는 false를 반환한다.*/
         return ((Number) value).intValue() == 1;
     }
+
     /*SELECT id
     FROM article
     WHERE id IN (?, ?, ?)
@@ -212,7 +233,7 @@ public class Sql {
         List<Long> longs = new ArrayList<>();
 
         //rows 안에 있는 Map<String, Object>에서 value를 꺼내서 longs에 추가한다.
-        for (int i = 0 ; i < rows.size(); i++) {
+        for (int i = 0; i < rows.size(); i++) {
             Map<String, Object> row = rows.get(i);
             Object value = row.values().iterator().next();
             longs.add((Long) value);

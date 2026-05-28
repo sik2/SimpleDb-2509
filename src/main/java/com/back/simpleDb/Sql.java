@@ -110,7 +110,22 @@ public class Sql {
         List<Map<String, Object>> rows = selectRows();
         return rows.isEmpty() ? null : rows.get(0);
     }
-    public LocalDateTime selectDatetime() { throw new UnsupportedOperationException(); }
+    public LocalDateTime selectDatetime() {
+        String sql = buildSql();
+        Connection conn = simpleDb.getConnection();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            bindParams(pstmt, params);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Timestamp ts = rs.getTimestamp(1);
+                    return ts != null ? ts.toLocalDateTime() : null;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("selectDatetime failed: " + e.getMessage(), e);
+        }
+        return null;
+    }
     public Long selectLong() { throw new UnsupportedOperationException(); }
     public List<Long> selectLongs() { throw new UnsupportedOperationException(); }
     public String selectString() { throw new UnsupportedOperationException(); }

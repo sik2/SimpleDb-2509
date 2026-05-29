@@ -48,6 +48,13 @@ public class SimpleDb {
         return context.connection;
     }
 
+    /**
+     * Sql 객체가 SimpleDb 객체를 참조하는 구조이긴 하지만
+     * SimpleDb가 자기 자신(this)을 주입하며
+     * Sql을 생성하는 구조이므로 순환참조는 발생하지 않삼.
+     * 또한 run메서드에서 Sql 객체를 try-with-resources로 생성하여
+     * 사용 후 자동으로 close()가 호출되도록 하여 자원 누수 방지에도 신경썼음.
+     */
     public Sql genSql() {
         return new Sql(this);
     }
@@ -62,6 +69,13 @@ public class SimpleDb {
                 sqlObj.update();
             } else if (sql.trim().toUpperCase().startsWith("DELETE") || sql.trim().toUpperCase().startsWith("TRUNCATE") || sql.trim().toUpperCase().startsWith("DROP") || sql.trim().toUpperCase().startsWith("CREATE")) {
                 sqlObj.delete(); // 내부적으로 executeUpdate() 호출하는 메서드 공유 가능
+                /**
+                 * JDBC에서 쿼리를 실행하는 메서드는 크게 executeQuery()와 executeUpdate()로 나뉘는데
+                 * executeQuery()는 SELECT문 전용으로 ResultSet을 반환하고
+                 * executeUpdate()는 INSERT, UPDATE, DELETE, DDL문 등 결과로 영향받은 행의 수를 반환하는 메서드다.
+                 * 따라서 SELECT문이 아닌 경우에는 executeUpdate()를 호출하는 delete() 메서드를 재사용하였다.
+                 * 다만 INSERT , UPDATE 는 리턴값이 달라서 따로 빼었다.
+                 */
             }
         }
     }

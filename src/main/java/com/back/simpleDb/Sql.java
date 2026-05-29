@@ -1,0 +1,273 @@
+package com.back.simpleDb;
+
+import com.back.Article;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Sql {
+    private final SimpleDb simpleDb;
+    private final StringBuilder sqlBuilder = new StringBuilder();
+    private final List<Object> params = new ArrayList<>();
+
+    public Sql(SimpleDb simpleDb) {
+        this.simpleDb = simpleDb;
+    }
+
+    public Sql append(String sqlPart, Object... args) {
+        if (!sqlBuilder.isEmpty()) {
+            sqlBuilder.append("\n");
+        }
+        sqlBuilder.append(sqlPart);
+        for (Object arg : args) {
+            params.add(arg);
+        }
+        return this;
+    }
+
+    public long insert() {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            pstmt.executeUpdate();
+
+            try (var rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+
+            return 0L;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("INSERT 실행 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+
+    public Sql appendIn(String sqlPart, Object... args) {
+        String expanded = sqlPart.replace("?", String.join(",", Collections.nCopies(args.length, "?")));
+        return append(expanded, args);
+    }
+
+    public int update() { return executeUpdateLike("UPDATE"); }
+    public int delete() { return executeUpdateLike("DELETE"); }
+    public List<Map<String, Object>> selectRows() {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                List<Map<String, Object>> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(toRowMap(rs));
+                }
+                return rows;
+            }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("SELECT 실행 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+
+    public Map<String, Object> selectRow() {
+        List<Map<String, Object>> rows = selectRows();
+        if (rows.isEmpty()) {
+            return new HashMap<>();
+        }
+        return rows.get(0);
+    }
+    public LocalDateTime selectDatetime() {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    var timestamp = rs.getTimestamp(1);
+                    return timestamp == null ? null : timestamp.toLocalDateTime();
+                }
+            }
+            }
+            throw new RuntimeException("날짜 조회 결과가 없습니다.");
+        } catch (Exception e) {
+            throw new RuntimeException("날짜 조회 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+
+    public Long selectLong() {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                Object value = rs.getObject(1);
+                if (value == null) {
+                    return null;
+                }
+                return ((Number) value).longValue();
+            }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("LONG 조회 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+    public String selectString() {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+            }
+            throw new RuntimeException("문자열이 조회되지 않았습니다.");
+        } catch (Exception e) {
+            throw new RuntimeException("문자열 조회 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+    public Boolean selectBoolean() {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBoolean(1);
+                }
+            }
+            }
+            throw new RuntimeException("boolean 값이 조회되지 않았습니다.");
+        } catch (Exception e) {
+            throw new RuntimeException("boolean 조회 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+    public List<Long> selectLongs() {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                List<Long> values = new ArrayList<>();
+                while (rs.next()) {
+                    values.add(rs.getLong(1));
+                }
+                return values;
+            }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Long 목록 조회 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+    public List<Article> selectRows(Class<Article> articleClass) {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            try (var rs = pstmt.executeQuery()) {
+                List<Article> result = new ArrayList<>();
+                while (rs.next()) {
+                    Article article = new Article();
+                    article.setId(rs.getLong("id"));
+                    article.setTitle(rs.getString("title"));
+                    article.setBody(rs.getString("body"));
+                    article.setCreatedDate(rs.getTimestamp("createdDate").toLocalDateTime());
+                    article.setModifiedDate(rs.getTimestamp("modifiedDate").toLocalDateTime());
+                    article.setBlind(rs.getBoolean("isBlind"));
+                    result.add(article);
+                }
+                return result;
+            }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("객체 목록 매핑 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+    public <T> T selectRow(Class<T> clazz) {
+        if (clazz == Article.class) {
+            List<Article> rows = selectRows(Article.class);
+            if (rows.isEmpty()) {
+                return null;
+            }
+            return clazz.cast(rows.get(0));
+        }
+        throw new UnsupportedOperationException("현재는 Article 매핑만 지원합니다.");
+    }
+
+    private int executeUpdateLike(String actionName) {
+        String sql = sqlBuilder.toString();
+        java.sql.Connection conn = null;
+        try {
+            conn = simpleDb.getConnection();
+            try (var pstmt = conn.prepareStatement(sql)) {
+            SimpleDb.bindParams(pstmt, params.toArray());
+            return pstmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(actionName + " 실행 중 오류가 발생했습니다.", e);
+        } finally {
+            simpleDb.closeConnection(conn);
+        }
+    }
+
+    private Map<String, Object> toRowMap(java.sql.ResultSet rs) throws java.sql.SQLException {
+        Map<String, Object> row = new HashMap<>();
+        var metaData = rs.getMetaData();
+
+        for (int i = 1; i <= metaData.getColumnCount(); i++) {
+            String columnName = metaData.getColumnLabel(i);
+            Object value = rs.getObject(i);
+
+            if (value instanceof java.sql.Timestamp timestamp) {
+                value = timestamp.toLocalDateTime();
+            } else if (value instanceof byte[] bytes) {
+                value = bytes.length > 0 && bytes[0] != 0;
+            }
+
+            row.put(columnName, value);
+        }
+
+        return row;
+    }
+}

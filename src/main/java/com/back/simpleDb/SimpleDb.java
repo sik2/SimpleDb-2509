@@ -67,7 +67,20 @@ public class SimpleDb {
         return new Sql(this);
     }
 
-    public void close() {}
+    public void close() {
+        Connection conn = connectionHolder.get();
+        if (conn != null) {
+            try {
+                if (!conn.isClosed()) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            } finally {
+                connectionHolder.remove();
+            }
+        }
+    }
 
     public void startTransaction() {}
 

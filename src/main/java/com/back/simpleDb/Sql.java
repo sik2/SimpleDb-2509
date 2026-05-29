@@ -131,7 +131,19 @@ public class Sql {
 
 
     public List<Article> selectRows(Class<Article> aritcle) {
-        return null;
+        List<Article> articles = new ArrayList<>();
+        try(PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
+
+            while(rs.next()) {
+                Article article = makeArticle(rs);
+                articles.add(article);
+            }
+
+            return articles;
+
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // 단건 출력
@@ -158,8 +170,27 @@ public class Sql {
 
     }
 
+    private Article makeArticle(ResultSet rs) throws SQLException {
+        Long id = rs.getLong("id");
+        LocalDateTime createdDate = rs.getTimestamp("createdDate").toLocalDateTime();
+        LocalDateTime modifiedDate = rs.getTimestamp("modifiedDate").toLocalDateTime();
+        String title = rs.getString("title");
+        String body = rs.getString("body");
+        boolean isBlind = rs.getBoolean("isBlind");
+
+        return new Article(id,title,body ,createdDate, modifiedDate, isBlind);
+    }
+
     public Article selectRow(Class<Article> article) {
-        return null;
+
+        try (PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
+            if(rs.next()) {
+                return makeArticle(rs);
+            }
+            return null;
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     //시간 출력
@@ -196,7 +227,18 @@ public class Sql {
 
     // 다중 건 출력
     public List<Long> selectLongs() {
-        return null;
+        List<Long> values = new ArrayList<>();
+        try(PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                values.add(rs.getLong(1));
+            }
+
+            return values;
+
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public String selectString() {

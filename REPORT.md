@@ -195,3 +195,128 @@ WHERE id IN (?, ?, ?)
 ## 한 줄 정리
 
 `appendIn()`은 params 값을 쿼리에 직접 붙이는 것이 아니라, params 개수만큼 `?` 자리를 늘리고 실제 값은 `PreparedStatement`가 바인딩하게 만드는 방식이다.
+
+# 5. t017 ~ t019 멀티스레드 Connection 과 트랜잭션 정리
+
+## 질문 요약
+
+t017부터 t019까지의 멀티스레드와 트랜잭션 에대한 질문이다.
+
+## 핵심 결론
+
+t017 ~ t019의 핵심은 `SimpleDb` 객체는 여러 스레드가 공유해도 되지만, `Connection`은 스레드마다 따로 가져야 한다는 것이다.
+
+이를 위해 `ThreadLocal<Connection>`을 사용한다.
+
+```java
+private final ThreadLocal<Connection> connectionThreadLocal = new ThreadLocal<>();
+```
+
+## t017 핵심
+
+t017은 여러 스레드가 동시에 같은 `simpleDb` 객체를 사용해도 문제가 없는지 확인한다.
+
+각 스레드는 같은 `simpleDb` 객체를 사용하지만, 내부 DB 연결은 자기 스레드 전용 `Connection`을 사용해야 한다.
+
+```text
+1번 스레드 -> 1번 Connection
+2번 스레드 -> 2번 Connection
+3번 스레드 -> 3번 Connection
+```
+
+그래서 `getConnection()`은 매번 새 Connection을 만들면 안 되고, 현재 스레드에 저장된 Connection을 재사용해야 한다.
+
+```java
+public Connection getConnection() {
+    Connection conn = connectionThreadLocal.get();
+
+    if (conn == null || conn.isClosed()) {
+        conn = DriverManager.getConnection(url, username, password);
+        connectionThreadLocal.set(conn);
+    }
+
+    return conn;
+}
+```
+
+## t018, t019 핵심
+
+트랜잭션은 SQL 객체가 아니라 `Connection`에 걸린다.
+
+따라서 `startTransaction()`, `insert()`, `rollback()` 또는 `commit()`이 모두 같은 Connection을 사용해야 한다.
+
+```text
+startTransaction() -> A Connection
+insert()           -> A Connection
+rollback()         -> A Connection
+```
+
+만약 `getConnection()`이 매번 새 Connection을 만들면 아래처럼 되어 트랜잭션이 깨진다.
+
+```text
+startTransaction() -> A Connection
+insert()           -> B Connection
+rollback()         -> C Connection
+```
+
+이 경우 `rollback()`을 호출해도 `insert()`가 실행된 B Connection의 작업은 취소되지 않는다.
+
+## rollback() 구현 방향
+
+`rollback()`은 단순히 `setAutoCommit(true)`만 하면 안 된다.
+
+실제 취소 작업은 `conn.rollback()`이 담당한다.
+
+```java
+public void rollback() {
+    try {
+        Connection conn = getConnection();
+        conn.rollback();
+        conn.setAutoCommit(true);
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
+}
+```
+
+`conn.rollback()`은 트랜잭션 중 실행된 작업을 취소한다.
+
+`conn.setAutoCommit(true)`는 트랜잭션 모드를 끝내고 다시 자동 커밋 모드로 돌리는 역할이다.
+
+## 메서드별 역할
+
+```java
+public void startTransaction() {
+    getConnection().setAutoCommit(false);
+}
+```
+
+`startTransaction()`은 현재 스레드의 Connection을 수동 커밋 모드로 바꾼다.
+
+```java
+public void commit() {
+    Connection conn = getConnection();
+    conn.commit();
+    conn.setAutoCommit(true);
+}
+```
+
+`commit()`은 트랜잭션 중 실행한 작업을 확정 저장한다.
+
+```java
+public void close() {
+    Connection conn = connectionThreadLocal.get();
+
+    if (conn != null && !conn.isClosed()) {
+        conn.close();
+    }
+
+    connectionThreadLocal.remove();
+}
+```
+
+`close()`는 현재 스레드가 쓰던 Connection만 닫고 `ThreadLocal`에서도 제거한다.
+
+## 한 줄 정리
+
+t017은 스레드별 독립 Connection을 요구하고, t018과 t019는 같은 스레드 안에서 같은 Connection을 재사용해야 rollback과 commit이 정상 동작한다.

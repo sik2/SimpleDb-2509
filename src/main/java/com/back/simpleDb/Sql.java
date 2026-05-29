@@ -4,10 +4,7 @@ import com.back.domain.Article;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Sql {
 
@@ -34,7 +31,22 @@ public class Sql {
 
     // 다중행 비교 (IN)
     public Sql appendIn(String query, Object... args) {
+        String questionMarks = "?";
+
+        if(args.length> 0) {
+            questionMarks = String.join(", ", Collections.nCopies(args.length, "?"));
+        }
+
+        query = query.replace("?", questionMarks);
+
+        stringBuilder.append(query).append("\n");
+
+        for(Object arg : args) {
+            params.add(arg);
+        }
+
         return this;
+
     }
 
     private PreparedStatement prepareStatement(Connection conn) throws SQLException {
@@ -53,11 +65,9 @@ public class Sql {
     }
 
     private int executeUpdate() {
-        Connection conn = simpleDb.getConnection();
-
-        try (PreparedStatement pstmt = prepareStatement(conn)) {
+        try (PreparedStatement pstmt = prepareStatement(getConnection())) {
             return pstmt.executeUpdate();
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
@@ -65,19 +75,17 @@ public class Sql {
 
     // 데이터베이스 입력 메서드
     public long insert() {
-        Connection conn = simpleDb.getConnection();
-
-        try (PreparedStatement pstmt = prepareStatement(conn, true)){
+        try (PreparedStatement pstmt = prepareStatement(getConnection(), true)) {
             pstmt.executeUpdate();
-            try (ResultSet rs = pstmt.getGeneratedKeys()){
-                if(rs.next()) {
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
                     return rs.getLong(1);
                 }
-            return 0;
-            } catch(SQLException e) {
+                return 0;
+            } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
@@ -94,19 +102,17 @@ public class Sql {
 
     //여러 값 출력
     public List<Map<String, Object>> selectRows() {
-        Connection conn = simpleDb.getConnection();
-
-        try(PreparedStatement pstmt = prepareStatement(conn); ResultSet rs = pstmt.executeQuery()) {
+        try (PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
 
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
             List<Map<String, Object>> rows = new ArrayList<>();
 
 
-            while(rs.next()) {
+            while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
 
-                for(int i = 1; i <= columnCount; i++) {
+                for (int i = 1; i <= columnCount; i++) {
                     String columnName = metaData.getColumnLabel(i);
                     Object value = rs.getObject(i);
 
@@ -117,7 +123,7 @@ public class Sql {
 
             return rows;
 
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException();
         }
 
@@ -130,17 +136,13 @@ public class Sql {
 
     // 단건 출력
     public Map<String, Object> selectRow() {
-        Connection conn = simpleDb.getConnection();
-
-        try(PreparedStatement pstmt = prepareStatement(conn); ResultSet rs = pstmt.executeQuery()) {
-
-
+        try (PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
 
-            if(rs.next()) {
+            if (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
-                for(int i = 1; i <= columnCount; i++) {
+                for (int i = 1; i <= columnCount; i++) {
                     String columnName = metaData.getColumnLabel(i);
                     Object value = rs.getObject(i);
                     row.put(columnName, value);
@@ -150,7 +152,7 @@ public class Sql {
 
             return null;
 
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
@@ -162,12 +164,34 @@ public class Sql {
 
     //시간 출력
     public LocalDateTime selectDatetime() {
-        return null;
+        try (PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
+
+            if (rs.next()) {
+                return rs.getTimestamp(1).toLocalDateTime();
+            }
+            return null;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     // 아이디 등 숫자 출력?
     public long selectLong() {
-        return 0;
+        try (PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
+
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+
+            if (rs.next()) {
+                return Long.parseLong(rs.getObject(1).toString());
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // 다중 건 출력
@@ -176,11 +200,38 @@ public class Sql {
     }
 
     public String selectString() {
-        return null;
+        try(PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
+
+            if(rs.next()) {
+                return rs.getString(1);
+            }
+
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        return "";
     }
 
     public boolean selectBoolean() {
+        try(PreparedStatement pstmt = prepareStatement(getConnection()); ResultSet rs = pstmt.executeQuery()) {
+
+            if(rs.next()) {
+                return rs.getBoolean(1);
+
+            }
+
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+
         return false;
+    }
+
+    public Connection getConnection() {
+        return simpleDb.getConnection();
     }
 
 

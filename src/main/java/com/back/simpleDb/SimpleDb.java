@@ -43,7 +43,7 @@ public class SimpleDb {
 
     public Connection getConnection() {
         try {
-            String url = "jdbc:mysql://%s:3306/%s".formatted(serverName, schemaName);
+            String url = "jdbc:mysql://%s:3306/%s?serverTimezone=UTC".formatted(serverName, schemaName);
             return DriverManager.getConnection(url, username, password);
         } catch(SQLException e) {
             throw new RuntimeException(e);

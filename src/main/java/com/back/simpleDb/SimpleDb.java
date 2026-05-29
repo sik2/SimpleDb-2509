@@ -11,6 +11,7 @@ public class SimpleDb {
     private final String password;
     private final String dbName;
     private boolean devMode;
+    private final ThreadLocal<Connection> transactionConnection = new ThreadLocal<>();
 
     public SimpleDb(String host, String username, String password, String dbName) {
         this.host = host;
@@ -41,6 +42,15 @@ public class SimpleDb {
     }
 
     Connection getConnection() throws SQLException {
+        Connection txConn = transactionConnection.get();
+        if (txConn != null) {
+            return txConn;
+        }
+
+        return createNewConnection();
+    }
+
+    private Connection createNewConnection() throws SQLException {
         String url = "jdbc:mysql://" + host + ":3306/?serverTimezone=Asia/Seoul";
         Connection conn = DriverManager.getConnection(url, username, password);
 
@@ -60,8 +70,60 @@ public class SimpleDb {
         }
     }
 
-    public void close() {}
-    public void startTransaction() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
-    public void rollback() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
-    public void commit() { throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다."); }
+    void closeConnection(Connection conn) {
+        if (conn == null) return;
+        if (transactionConnection.get() == conn) return;
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("커넥션 종료 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    public void close() {
+        Connection conn = transactionConnection.get();
+        if (conn == null) return;
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("트랜잭션 커넥션 종료 중 오류가 발생했습니다.", e);
+        } finally {
+            transactionConnection.remove();
+        }
+    }
+
+    public void startTransaction() {
+        if (transactionConnection.get() != null) return;
+        try {
+            Connection conn = createNewConnection();
+            conn.setAutoCommit(false);
+            transactionConnection.set(conn);
+        } catch (SQLException e) {
+            throw new RuntimeException("트랜잭션 시작 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    public void rollback() {
+        Connection conn = transactionConnection.get();
+        if (conn == null) return;
+        try {
+            conn.rollback();
+        } catch (SQLException e) {
+            throw new RuntimeException("롤백 중 오류가 발생했습니다.", e);
+        } finally {
+            close();
+        }
+    }
+
+    public void commit() {
+        Connection conn = transactionConnection.get();
+        if (conn == null) return;
+        try {
+            conn.commit();
+        } catch (SQLException e) {
+            throw new RuntimeException("커밋 중 오류가 발생했습니다.", e);
+        } finally {
+            close();
+        }
+    }
 }

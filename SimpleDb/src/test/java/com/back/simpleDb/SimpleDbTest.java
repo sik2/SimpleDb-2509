@@ -1,7 +1,8 @@
 package com.back.simpleDb;
 
-import com.back.entity.Article;
+import com.back.Article;
 import org.junit.jupiter.api.*;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -154,7 +155,6 @@ public class SimpleDbTest {
         */
         sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");
         List<Map<String, Object>> articleRows = sql.selectRows();
-        System.out.println(articleRows.get(0).keySet());
 
         IntStream.range(0, articleRows.size()).forEach(i -> {
             long id = i + 1;

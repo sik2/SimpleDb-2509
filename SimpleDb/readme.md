@@ -1,6 +1,9 @@
+# 아래 테스트케이스들을 만족시켜주세요.
+
+```java
 package com.back.simpleDb;
 
-import com.back.entity.Article;
+import com.back.Article;
 import org.junit.jupiter.api.*;
 
 import java.time.LocalDateTime;
@@ -154,7 +157,6 @@ public class SimpleDbTest {
         */
         sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");
         List<Map<String, Object>> articleRows = sql.selectRows();
-        System.out.println(articleRows.get(0).keySet());
 
         IntStream.range(0, articleRows.size()).forEach(i -> {
             long id = i + 1;
@@ -536,3 +538,4 @@ public class SimpleDbTest {
         assertThat(newCount).isEqualTo(oldCount + 1);
     }
 }
+```

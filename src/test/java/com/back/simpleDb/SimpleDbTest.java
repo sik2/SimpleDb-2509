@@ -1,8 +1,9 @@
 package com.back.simpleDb;
 
 import com.back.Article;
+import com.back.SimpleDb;
+import com.back.Sql;
 import org.junit.jupiter.api.*;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -24,7 +25,7 @@ public class SimpleDbTest {
 
     @BeforeAll
     public static void beforeAll() {
-        simpleDb = new SimpleDb("localhost", "root", "root123414", "simpleDb__test");
+        simpleDb = new SimpleDb("localhost", "root", "1234", "simpleDb__test");
         simpleDb.setDevMode(true);
 
         createArticleTable();
@@ -150,7 +151,7 @@ public class SimpleDbTest {
         == rawSql ==
         SELECT *
         FROM article
-        ORDER BY id ASC
+        ORDER B Y id ASC
         LIMIT 3
         */
         sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");
@@ -353,8 +354,8 @@ public class SimpleDbTest {
         */
         sql.append("SELECT id")
                 .append("FROM article")
-                .appendIn("WHERE id IN (?)", ids)
-                .appendIn("ORDER BY FIELD (id, ?)", ids);
+                .appendIn("WHERE id IN (?)", (Object[]) ids)
+                .appendIn("ORDER BY FIELD (id, ?)", (Object[])  ids);
 
         List<Long> foundIds = sql.selectLongs();
 

@@ -82,9 +82,22 @@ public class SimpleDb {
         }
     }
 
-    public void startTransaction() {}
+    public void startTransaction() {
+        try {
+            getConnection().setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-    public void rollback() {}
+    public void rollback() {
+        try {
+            getConnection().rollback();
+            getConnection().setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public void commit() {}
 }
